@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Geist, Geist_Mono, Noto_Sans_Thai } from "next/font/google"
+import { Anuphan, Geist, Geist_Mono } from "next/font/google"
 
 import TopNav from "@/components/layout/TopNav"
 import { LanguageProvider } from "@/lib/i18n"
@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 })
 
-const notoSansThai = Noto_Sans_Thai({
-  variable: "--font-noto-thai",
+const anuphan = Anuphan({
+  variable: "--font-thai-minimal",
   subsets: ["thai", "latin"],
 })
 
@@ -32,7 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} ${notoSansThai.variable} min-h-screen bg-[#070807] text-white antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${anuphan.variable} min-h-screen bg-[#070807] text-white antialiased`}>
         <LanguageProvider>
           <TopNav />
           {children}

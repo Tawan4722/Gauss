@@ -85,7 +85,7 @@
 }
 
 html[lang="th"] {
-  --font-ui-sans: var(--font-noto-thai);
+  --font-ui-sans: var(--font-thai-minimal);
 }
 
 .dark {
