@@ -110,15 +110,15 @@ const common: Record<Language, Record<string, string>> = {
 const tools: Record<Language, Record<string, { name: string; category: string; description: string }>> = {
   en: {},
   th: {
-    image: { name: "จัดการรูปภาพ", category: "รูปภาพ", description: "แปลงไฟล์ ปรับขนาด หมุน พลิก และใส่เอฟเฟกต์ให้รูปภาพ" },
+    image: { name: "จัดการรูปภาพ", category: "Image", description: "แปลงไฟล์ ปรับขนาด หมุน พลิก และใส่เอฟเฟกต์ให้รูปภาพ" },
     pdf: { name: "จัดการ PDF", category: "PDF", description: "ตรวจสอบ รวม แยก บีบอัด หรือดึงหน้าจากไฟล์ PDF" },
-    converter: { name: "แปลงไฟล์", category: "แปลง", description: "แปลงไฟล์เป็น PDF รูปภาพ TXT JSON CSV Data URL ZIP หรือเก็บต้นฉบับพร้อมเปลี่ยนชื่อ" },
+    converter: { name: "แปลงไฟล์", category: "Convert", description: "แปลงไฟล์เป็น PDF รูปภาพ TXT JSON CSV Data URL ZIP หรือเก็บต้นฉบับพร้อมเปลี่ยนชื่อ" },
     archive: { name: "สร้าง ZIP", category: "ZIP", description: "รวมไฟล์เป็น ZIP เลือกระดับบีบอัด จัดโฟลเดอร์ และแนบ manifest ได้" },
-    batch: { name: "จัดการหลายไฟล์", category: "ชุด", description: "เปลี่ยนชื่อ จัดเรียง ติดแท็ก เปลี่ยนตัวพิมพ์ หรือใส่เลขให้หลายไฟล์พร้อมกัน" },
+    batch: { name: "จัดการหลายไฟล์", category: "Batch", description: "เปลี่ยนชื่อ จัดเรียง ติดแท็ก เปลี่ยนตัวพิมพ์ หรือใส่เลขให้หลายไฟล์พร้อมกัน" },
     ocr: { name: "อ่านข้อความ", category: "OCR", description: "อ่านข้อความจากรูปภาพด้วย Tesseract แล้วส่งออกเป็น TXT JSON หรือ ZIP" },
-    metadata: { name: "ข้อมูลไฟล์", category: "เมตา", description: "สร้างรายงานชื่อไฟล์ ประเภท ขนาด นามสกุล และเวลาแก้ไข" },
-    checksum: { name: "สร้างแฮช", category: "แฮช", description: "สร้าง SHA checksum สำหรับตรวจสอบไฟล์หรือเช็กไฟล์ซ้ำ" },
-    text: { name: "จัดการข้อความ", category: "ข้อความ", description: "ล้างช่องว่าง เปลี่ยนตัวพิมพ์ นับคำ เรียงบรรทัด และลบบรรทัดซ้ำ" },
+    metadata: { name: "ข้อมูลไฟล์", category: "Meta", description: "สร้างรายงานชื่อไฟล์ ประเภท ขนาด นามสกุล และเวลาแก้ไข" },
+    checksum: { name: "สร้างแฮช", category: "Hash", description: "สร้าง SHA checksum สำหรับตรวจสอบไฟล์หรือเช็กไฟล์ซ้ำ" },
+    text: { name: "จัดการข้อความ", category: "Text", description: "ล้างช่องว่าง เปลี่ยนตัวพิมพ์ นับคำ เรียงบรรทัด และลบบรรทัดซ้ำ" },
   },
 }
 
