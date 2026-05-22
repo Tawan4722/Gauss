@@ -244,7 +244,7 @@ The repository root is a Vercel-ready Next.js app. Import the repository in Verc
 - Install Command: `npm ci`
 - Build Command: `npm run build`
 
-The included `vercel.json` pins those build settings for Vercel deployments. Build locally with:
+The included `vercel.json` pins those build settings for Vercel deployments. The build script clears Vercel preview-comments injection before running Next.js to avoid the current Next 16/Vercel adapter config mutation issue. Build locally with:
 
 ```bash
 npm run build
