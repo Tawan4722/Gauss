@@ -60,6 +60,11 @@ const common: Record<Language, Record<string, string>> = {
     "settings.invalid": "Stored preferences were invalid and have been reset.",
     "settings.status": "Preferences are stored locally in this browser.",
     "settings.reset": "Reset",
+    "category.media": "Media & Vision",
+    "category.docs": "Documents & Text",
+    "category.files": "File Operations",
+    "category.security": "Data & Security",
+    "category.all": "All Utilities",
   },
   th: {
     "nav.tools": "เครื่องมือ",
@@ -104,21 +109,26 @@ const common: Record<Language, Record<string, string>> = {
     "settings.invalid": "ข้อมูลการตั้งค่าเดิมไม่ถูกต้อง ระบบจึงรีเซ็ตให้แล้ว",
     "settings.status": "การตั้งค่าถูกเก็บไว้ในเบราว์เซอร์นี้",
     "settings.reset": "รีเซ็ต",
+    "category.media": "สื่อและรูปภาพ",
+    "category.docs": "เอกสารและข้อความ",
+    "category.files": "จัดการไฟล์",
+    "category.security": "ข้อมูลและความปลอดภัย",
+    "category.all": "เครื่องมือทั้งหมด",
   },
 }
 
 const tools: Record<Language, Record<string, { name: string; category: string; description: string }>> = {
   en: {},
   th: {
-    image: { name: "จัดการรูปภาพ", category: "Image", description: "แปลงไฟล์ ปรับขนาด หมุน พลิก และใส่เอฟเฟกต์ให้รูปภาพ" },
-    pdf: { name: "จัดการ PDF", category: "PDF", description: "ตรวจสอบ รวม แยก บีบอัด หรือดึงหน้าจากไฟล์ PDF" },
-    converter: { name: "แปลงไฟล์", category: "Convert", description: "แปลงไฟล์เป็น PDF รูปภาพ TXT JSON CSV Data URL ZIP หรือเก็บต้นฉบับพร้อมเปลี่ยนชื่อ" },
-    archive: { name: "สร้าง ZIP", category: "ZIP", description: "รวมไฟล์เป็น ZIP เลือกระดับบีบอัด จัดโฟลเดอร์ และแนบ manifest ได้" },
-    batch: { name: "จัดการหลายไฟล์", category: "Batch", description: "เปลี่ยนชื่อ จัดเรียง ติดแท็ก เปลี่ยนตัวพิมพ์ หรือใส่เลขให้หลายไฟล์พร้อมกัน" },
-    ocr: { name: "อ่านข้อความ", category: "OCR", description: "อ่านข้อความจากรูปภาพด้วย Tesseract แล้วส่งออกเป็น TXT JSON หรือ ZIP" },
-    metadata: { name: "ข้อมูลไฟล์", category: "Meta", description: "สร้างรายงานชื่อไฟล์ ประเภท ขนาด นามสกุล และเวลาแก้ไข" },
-    checksum: { name: "สร้างแฮช", category: "Hash", description: "สร้าง SHA checksum สำหรับตรวจสอบไฟล์หรือเช็กไฟล์ซ้ำ" },
-    text: { name: "จัดการข้อความ", category: "Text", description: "ล้างช่องว่าง เปลี่ยนตัวพิมพ์ นับคำ เรียงบรรทัด และลบบรรทัดซ้ำ" },
+    image: { name: "จัดการรูปภาพ", category: "สื่อและรูปภาพ", description: "แปลงไฟล์ ปรับขนาด หมุน พลิก และใส่เอฟเฟกต์ให้รูปภาพ" },
+    pdf: { name: "จัดการ PDF", category: "เอกสารและข้อความ", description: "ตรวจสอบ รวม แยก บีบอัด หรือดึงหน้าจากไฟล์ PDF" },
+    converter: { name: "แปลงไฟล์", category: "จัดการไฟล์", description: "แปลงไฟล์เป็น PDF รูปภาพ TXT JSON CSV Data URL ZIP หรือเก็บต้นฉบับพร้อมเปลี่ยนชื่อ" },
+    archive: { name: "สร้าง ZIP", category: "จัดการไฟล์", description: "รวมไฟล์เป็น ZIP เลือกระดับบีบอัด จัดโฟลเดอร์ และแนบ manifest ได้" },
+    batch: { name: "จัดการหลายไฟล์", category: "จัดการไฟล์", description: "เปลี่ยนชื่อ จัดเรียง ติดแท็ก เปลี่ยนตัวพิมพ์ หรือใส่เลขให้หลายไฟล์พร้อมกัน" },
+    ocr: { name: "อ่านข้อความ", category: "สื่อและรูปภาพ", description: "อ่านข้อความจากรูปภาพด้วย Tesseract แล้วส่งออกเป็น TXT JSON หรือ ZIP" },
+    metadata: { name: "ข้อมูลไฟล์", category: "ข้อมูลและความปลอดภัย", description: "สร้างรายงานชื่อไฟล์ ประเภท ขนาด นามสกุล และเวลาแก้ไข" },
+    checksum: { name: "สร้างแฮช", category: "ข้อมูลและความปลอดภัย", description: "สร้าง SHA checksum สำหรับตรวจสอบไฟล์หรือเช็กไฟล์ซ้ำ" },
+    text: { name: "จัดการข้อความ", category: "เอกสารและข้อความ", description: "ล้างช่องว่าง เปลี่ยนตัวพิมพ์ นับคำ เรียงบรรทัด และลบบรรทัดซ้ำ" },
   },
 }
 

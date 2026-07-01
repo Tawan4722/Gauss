@@ -1,5 +1,5 @@
 import JSZip from "jszip";
-import { PDFDocument, StandardFonts, rgb, type PDFPage } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, degrees, type PDFPage } from "pdf-lib";
 
 import type { Tool, ToolSettings } from "@/lib/tools/registry";
 
@@ -299,6 +299,42 @@ const processImages = async (files: File[], settings: ToolSettings) => {
 const processPdf = async (files: File[], settings: ToolSettings) => {
   const action = getString(settings, "action", "Merge");
   const useObjectStreams = getBoolean(settings, "linearize", true);
+  const editorPagesJson = getString(settings, "editorPagesJson", "");
+
+  // Visual editor compilation path
+  if (editorPagesJson) {
+    try {
+      const editorPages = JSON.parse(editorPagesJson) as Array<{ fileIndex: number; pageIndex: number; rotation: number }>;
+      if (editorPages && editorPages.length > 0) {
+        const loadedDocs = await Promise.all(
+          files.map(async (file) => PDFDocument.load(await file.arrayBuffer()))
+        );
+
+        const pdf = await PDFDocument.create();
+        for (const item of editorPages) {
+          if (item.fileIndex >= 0 && item.fileIndex < loadedDocs.length) {
+            const sourceDoc = loadedDocs[item.fileIndex];
+            const pageCount = sourceDoc.getPageCount();
+            if (item.pageIndex >= 0 && item.pageIndex < pageCount) {
+              const [copiedPage] = await pdf.copyPages(sourceDoc, [item.pageIndex]);
+              if (item.rotation) {
+                copiedPage.setRotation(degrees(item.rotation));
+              }
+              pdf.addPage(copiedPage);
+            }
+          }
+        }
+
+        const bytes = await pdf.save({ useObjectStreams });
+        return {
+          summary: "PDF editor compilation completed.",
+          outputs: [await createOutput("gauss-edited.pdf", pdfBytesToBlob(bytes), `Compiled ${editorPages.length} edited page(s).`)],
+        };
+      }
+    } catch (error) {
+      console.error("Failed visual PDF compilation, falling back", error);
+    }
+  }
 
   if (action === "Inspect") {
     const lines = ["Gauss PDF inspection", `Generated: ${new Date().toISOString()}`, ""];

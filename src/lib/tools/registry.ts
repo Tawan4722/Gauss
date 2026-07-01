@@ -27,7 +27,7 @@ export const toolRegistry: Tool[] = [
   {
     id: "image",
     name: "Image Lab",
-    category: "Image",
+    category: "Media & Vision",
     description: "Convert, resize, rotate, flip, and stylize images into browser-supported output formats.",
     acceptedFileTypes: ["image/*"],
     processingMode: "client",
@@ -45,12 +45,17 @@ export const toolRegistry: Tool[] = [
   {
     id: "pdf",
     name: "PDF Desk",
-    category: "PDF",
-    description: "Inspect, merge, split, extract page summaries, or re-save PDF files directly in the browser.",
+    category: "Documents & Text",
+    description: "Inspect, merge, split, extract page summaries, apply Bates stamping, or convert to grayscale locally.",
     acceptedFileTypes: ["application/pdf", ".pdf"],
     processingMode: "client",
     settingsSchema: [
-      { name: "action", label: "Action", type: "select", options: ["Inspect", "Merge", "Split", "Compress", "Extract pages"], defaultValue: "Merge" },
+      { name: "action", label: "Action", type: "select", options: ["Inspect", "Merge", "Split", "Compress", "Extract pages", "Bates Stamping"], defaultValue: "Merge" },
+      { name: "batesPrefix", label: "Bates Prefix", type: "text", defaultValue: "CONFIDENTIAL-" },
+      { name: "batesStart", label: "Bates Start Index", type: "slider", min: 1, max: 10000, step: 1, defaultValue: 1 },
+      { name: "batesPadding", label: "Bates Digit Padding", type: "slider", min: 1, max: 8, step: 1, defaultValue: 6 },
+      { name: "batesPosition", label: "Bates Position", type: "select", options: ["Top Left", "Top Center", "Top Right", "Bottom Left", "Bottom Center", "Bottom Right"], defaultValue: "Bottom Right" },
+      { name: "grayscale", label: "Apply Vector Grayscale", type: "checkbox", defaultValue: false },
       { name: "pageRange", label: "Page range", type: "text", defaultValue: "1-9999" },
       { name: "linearize", label: "Use object-stream optimization", type: "checkbox", defaultValue: true },
     ],
@@ -58,7 +63,7 @@ export const toolRegistry: Tool[] = [
   {
     id: "converter",
     name: "Format Converter",
-    category: "Convert",
+    category: "File Operations",
     description: "Convert supported files to PDF, images, text, JSON, CSV, data URLs, ZIP, or renamed originals.",
     acceptedFileTypes: ["*/*"],
     processingMode: "client",
@@ -71,7 +76,7 @@ export const toolRegistry: Tool[] = [
   {
     id: "archive",
     name: "Archive Bench",
-    category: "Archive",
+    category: "File Operations",
     description: "Package selected files into a ZIP with folder organization, compression, and optional manifest.",
     acceptedFileTypes: ["*/*"],
     processingMode: "client",
@@ -85,7 +90,7 @@ export const toolRegistry: Tool[] = [
   {
     id: "batch",
     name: "Batch Console",
-    category: "Batch",
+    category: "File Operations",
     description: "Rename, sort, tag, lowercase, uppercase, or number files and download the batch as a ZIP.",
     acceptedFileTypes: ["*/*"],
     processingMode: "client",
@@ -98,7 +103,7 @@ export const toolRegistry: Tool[] = [
   {
     id: "ocr",
     name: "OCR Station",
-    category: "OCR",
+    category: "Media & Vision",
     description: "Extract text from images with Tesseract and export text, JSON, or a searchable text bundle.",
     acceptedFileTypes: ["image/*", "text/plain", ".txt"],
     processingMode: "client",
@@ -111,7 +116,7 @@ export const toolRegistry: Tool[] = [
   {
     id: "metadata",
     name: "Metadata Inspector",
-    category: "Meta",
+    category: "Data & Security",
     description: "Generate file inventories as JSON, CSV, TXT, or HTML with names, types, sizes, and timestamps.",
     acceptedFileTypes: ["*/*"],
     processingMode: "client",
@@ -123,7 +128,7 @@ export const toolRegistry: Tool[] = [
   {
     id: "checksum",
     name: "Checksum Forge",
-    category: "Hash",
+    category: "Data & Security",
     description: "Create cryptographic checksums for verification, publishing, and duplicate checks.",
     acceptedFileTypes: ["*/*"],
     processingMode: "client",
@@ -135,7 +140,7 @@ export const toolRegistry: Tool[] = [
   {
     id: "text",
     name: "Text Workshop",
-    category: "Text",
+    category: "Documents & Text",
     description: "Clean, transform, count, and export text files into TXT, JSON, CSV, or HTML.",
     acceptedFileTypes: ["text/*", ".txt", ".csv", ".json", ".md", ".html", ".xml"],
     processingMode: "client",
