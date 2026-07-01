@@ -121,7 +121,12 @@ const tools: Record<Language, Record<string, { name: string; category: string; d
   en: {},
   th: {
     image: { name: "จัดการรูปภาพ", category: "สื่อและรูปภาพ", description: "แปลงไฟล์ ปรับขนาด หมุน พลิก และใส่เอฟเฟกต์ให้รูปภาพ" },
-    pdf: { name: "จัดการ PDF", category: "เอกสารและข้อความ", description: "ตรวจสอบ รวม แยก บีบอัด หรือดึงหน้าจากไฟล์ PDF" },
+    "merge-pdf": { name: "รวม PDF", category: "เอกสารและข้อความ", description: "รวมไฟล์ PDF หลายไฟล์เข้าด้วยกันตามลำดับที่ต้องการ" },
+    "split-pdf": { name: "แยก PDF", category: "เอกสารและข้อความ", description: "แยกหน้าเอกสารหรือช่วงหน้าที่ต้องการออกจากไฟล์ PDF" },
+    "bates-pdf": { name: "ใส่เลข Bates", category: "เอกสารและข้อความ", description: "ใส่เลขระบุลำดับหน้าเอกสารตามระบบกฎหมายและการตรวจสอบ" },
+    "watermark-pdf": { name: "ใส่ลายน้ำ", category: "เอกสารและข้อความ", description: "ใส่ลายน้ำข้อความหรือบล็อกลายเซ็นแบบจัดตำแหน่งได้อย่างอิสระ" },
+    "grayscale-pdf": { name: "แปลง PDF เป็นขาวดำ", category: "เอกสารและข้อความ", description: "แปลงสีของเวกเตอร์และรูปภาพในไฟล์ PDF เป็นโทนสีเทา" },
+    "create-pdf": { name: "สร้าง PDF", category: "เอกสารและข้อความ", description: "สร้างไฟล์ PDF ใหม่พร้อมตกแต่งหัวข้อ ย่อหน้า และแทรกรูปภาพประกอบ" },
     converter: { name: "แปลงไฟล์", category: "จัดการไฟล์", description: "แปลงไฟล์เป็น PDF รูปภาพ TXT JSON CSV Data URL ZIP หรือเก็บต้นฉบับพร้อมเปลี่ยนชื่อ" },
     archive: { name: "สร้าง ZIP", category: "จัดการไฟล์", description: "รวมไฟล์เป็น ZIP เลือกระดับบีบอัด จัดโฟลเดอร์ และแนบ manifest ได้" },
     batch: { name: "จัดการหลายไฟล์", category: "จัดการไฟล์", description: "เปลี่ยนชื่อ จัดเรียง ติดแท็ก เปลี่ยนตัวพิมพ์ หรือใส่เลขให้หลายไฟล์พร้อมกัน" },

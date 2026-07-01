@@ -19,14 +19,19 @@ import {
   Sparkles,
   Settings,
   Globe,
-  LayoutGrid
+  LayoutGrid,
+  Scissors
 } from "lucide-react"
 
 // Icon mapping helper for tools
 export const toolIconMap: Record<string, React.ComponentType<any>> = {
   image: Image,
   ocr: ScanText,
-  pdf: FileText,
+  "merge-pdf": Layers,
+  "split-pdf": Scissors,
+  "bates-pdf": Hash,
+  "watermark-pdf": Type,
+  "grayscale-pdf": FileText,
   text: Type,
   converter: Sparkles,
   archive: FolderArchive,
@@ -81,35 +86,31 @@ export default function TopNav() {
   const isToolActive = pathname.startsWith("/tools/")
 
   return (
-    <nav className="fixed left-0 right-0 top-4 z-50 px-4 sm:top-6 sm:px-8" aria-label="Primary navigation">
-      <div className="mx-auto flex max-w-7xl items-center justify-between rounded-full border border-white/[0.08] bg-black/45 p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
-        <div className="flex items-center gap-3">
+    <nav className="fixed left-0 right-0 top-0 z-50 border-b border-zinc-900 bg-black/80 px-6 py-3 backdrop-blur-md animate-fade-in" aria-label="Primary navigation">
+      <div className="mx-auto flex max-w-7xl items-center justify-between">
+        <div className="flex items-center gap-6">
           {/* Logo */}
           <Link
             href="/"
             className={cn(
-              "relative rounded-full px-5 py-2.5 text-xs font-black uppercase tracking-[0.2em] transition-all duration-300",
-              pathname === "/" 
-                ? "bg-white text-zinc-950 shadow-[0_0_20px_rgba(255,255,255,0.25)]" 
-                : "text-white/90 hover:bg-white/10 hover:text-white"
+              "text-xs font-bold uppercase tracking-[0.2em] transition-all duration-200",
+              pathname === "/" ? "text-white" : "text-zinc-500 hover:text-zinc-300"
             )}
           >
             Gauss
           </Link>
 
           {/* Navigation Links */}
-          <div className="hidden items-center gap-1 md:flex">
+          <div className="hidden items-center gap-4 md:flex">
             {/* Unified Workspace Link */}
             <Link
               href="/tools"
               className={cn(
-                "flex items-center gap-1.5 rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.12em] transition-all duration-300",
-                pathname === "/tools" 
-                  ? "bg-cyan-200 text-zinc-950 shadow-[0_0_20px_rgba(165,243,252,0.25)]" 
-                  : "text-white/60 hover:bg-white/10 hover:text-white"
+                "flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] transition-all duration-200",
+                pathname === "/tools" ? "text-white" : "text-zinc-500 hover:text-zinc-300"
               )}
             >
-              <LayoutGrid className="h-3 w-3" />
+              <LayoutGrid className="h-3.5 w-3.5" />
               {t("nav.tools")}
             </Link>
 
@@ -119,27 +120,25 @@ export default function TopNav() {
                 type="button"
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className={cn(
-                  "flex items-center gap-1 rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.12em] transition-all duration-300",
-                  isToolActive 
-                    ? "bg-cyan-900/40 text-cyan-200 border border-cyan-500/20" 
-                    : "text-white/60 hover:bg-white/10 hover:text-white"
+                  "flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.12em] transition-all duration-200",
+                  isToolActive ? "text-white" : "text-zinc-500 hover:text-zinc-300"
                 )}
                 aria-expanded={dropdownOpen}
                 aria-haspopup="true"
               >
                 <span>Utilities</span>
-                <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", dropdownOpen && "rotate-180")} />
+                <ChevronDown className={cn("h-3 w-3 transition-transform duration-200", dropdownOpen && "rotate-180")} />
               </button>
 
               {/* Dropdown Menu Panel */}
               {dropdownOpen && (
-                <div className="absolute left-0 mt-3 w-[640px] rounded-3xl border border-white/10 bg-[#0c0e0c]/95 p-6 shadow-[0_24px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl transition-all duration-300 animate-in fade-in slide-in-from-top-2">
+                <div className="absolute left-0 mt-4 w-[600px] rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl transition-all duration-200 animate-in fade-in slide-in-from-top-1">
                   <div className="grid grid-cols-2 gap-6">
                     {Object.entries(categorizedTools).map(([category, tools]) => {
                       const categoryLabel = t(categoryKeyMap[category]) || category
                       return (
                         <div key={category} className="space-y-2">
-                          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-200/50 px-2">
+                          <h4 className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500 px-2">
                             {categoryLabel}
                           </h4>
                           <div className="space-y-1">
@@ -151,21 +150,18 @@ export default function TopNav() {
                                   key={tool.id}
                                   href={`/tools/${tool.id}`}
                                   className={cn(
-                                    "flex items-start gap-3 rounded-2xl p-2.5 transition-all duration-200 hover:bg-white/[0.04]",
-                                    isCurrent ? "bg-white/[0.06] border-l-2 border-cyan-300" : ""
+                                    "flex items-start gap-3 rounded-xl p-2 transition-all duration-150",
+                                    isCurrent ? "bg-zinc-900 text-white" : "text-zinc-400 hover:bg-zinc-900/50 hover:text-white"
                                   )}
                                 >
-                                  <div className={cn(
-                                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/[0.04] text-white/70",
-                                    isCurrent && "bg-cyan-500/10 text-cyan-300"
-                                  )}>
-                                    <Icon className="h-4 w-4" />
+                                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-zinc-500">
+                                    <Icon className="h-3.5 w-3.5" />
                                   </div>
                                   <div className="min-w-0">
-                                    <span className="block text-xs font-semibold text-white/90 group-hover:text-cyan-200">
+                                    <span className="block text-xs font-semibold">
                                       {toolText(tool.id, "name") || tool.name}
                                     </span>
-                                    <span className="block truncate text-[10px] text-white/40 mt-0.5">
+                                    <span className="block truncate text-[10px] text-zinc-500 mt-0.5">
                                       {toolText(tool.id, "description") || tool.description}
                                     </span>
                                   </div>
@@ -184,13 +180,13 @@ export default function TopNav() {
         </div>
 
         {/* Right side controls: Lang, Settings */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-4">
           {/* Mobile Tools Link */}
           <Link
             href="/tools"
             className={cn(
-              "md:hidden rounded-full px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.1em] transition-all",
-              pathname === "/tools" ? "bg-cyan-200 text-zinc-950" : "text-white/60 hover:bg-white/10 hover:text-white",
+              "md:hidden text-[10px] font-bold uppercase tracking-[0.1em] transition-all duration-200",
+              pathname === "/tools" ? "text-white" : "text-zinc-500 hover:text-zinc-300",
             )}
           >
             {t("nav.tools")}
@@ -200,9 +196,9 @@ export default function TopNav() {
           <button
             type="button"
             onClick={toggleLanguage}
-            className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-white/60 transition-all hover:bg-white/10 hover:text-white"
+            className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500 transition-all hover:text-zinc-300"
           >
-            <Globe className="h-3 w-3" />
+            <Globe className="h-3.5 w-3.5" />
             <span>{language === "en" ? "TH" : "EN"}</span>
           </button>
 
@@ -210,13 +206,11 @@ export default function TopNav() {
           <Link
             href="/settings"
             className={cn(
-              "flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] transition-all",
-              pathname === "/settings" 
-                ? "bg-amber-200 text-zinc-950 shadow-[0_0_20px_rgba(245,158,11,0.25)]" 
-                : "text-white/60 hover:bg-white/10 hover:text-white",
+              "flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.1em] transition-all duration-200",
+              pathname === "/settings" ? "text-white" : "text-zinc-500 hover:text-zinc-300",
             )}
           >
-            <Settings className="h-3 w-3 animate-[spin_8s_linear_infinite]" />
+            <Settings className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">{t("nav.settings")}</span>
           </Link>
         </div>

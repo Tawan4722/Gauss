@@ -53,41 +53,39 @@ export default function SettingsPanel() {
   }
 
   return (
-    <main className="min-h-screen bg-[#070807] px-5 pb-16 pt-32 text-white sm:px-8">
-      <div className="pointer-events-none fixed inset-0 -z-0 bg-[radial-gradient(circle_at_80%_20%,rgba(245,158,11,0.13),transparent_32%),linear-gradient(135deg,#070807,#11140f)]" />
-      <section className="relative z-10 mx-auto max-w-3xl">
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200/70">{t("settings.badge")}</p>
-        <h1 className="mt-4 text-5xl font-black tracking-[-0.05em] sm:text-7xl">{t("settings.title")}</h1>
-        <p className="mt-5 text-white/55">{t("settings.description")}</p>
-
-        <div className="mt-10 grid gap-4 rounded-[2rem] border border-white/10 bg-white/[0.045] p-5 shadow-2xl backdrop-blur-2xl">
-          <label className="flex items-center justify-between gap-5 rounded-3xl bg-white/[0.04] px-5 py-4">
+    <main className="min-h-screen bg-black px-6 pb-16 pt-24 text-white">
+      <section className="relative z-10 mx-auto max-w-3xl animate-fade-in">
+        <h1 className="text-3xl font-extrabold tracking-tight text-white">{t("settings.title")}</h1>
+        <p className="mt-2 text-xs text-zinc-400">{t("settings.description")}</p>
+ 
+        <div className="mt-6 border border-zinc-900 bg-zinc-950/20 p-5 rounded-2xl space-y-4">
+          <label className="flex items-center justify-between gap-5 border-b border-zinc-900 pb-4">
             <span>
-              <span className="block font-semibold">{t("settings.reduceMotion")}</span>
-              <span className="mt-1 block text-sm text-white/45">{t("settings.reduceMotionHelp")}</span>
+              <span className="block text-xs font-semibold text-zinc-200">{t("settings.reduceMotion")}</span>
+              <span className="mt-0.5 block text-[10px] text-zinc-500">{t("settings.reduceMotionHelp")}</span>
             </span>
-            <input type="checkbox" checked={preferences.reduceMotion} onChange={(event) => updatePreference("reduceMotion", event.target.checked)} className="h-5 w-5 accent-cyan-300" />
+            <input type="checkbox" checked={preferences.reduceMotion} onChange={(event) => updatePreference("reduceMotion", event.target.checked)} className="h-4 w-4 accent-zinc-300" />
           </label>
-
-          <label className="flex items-center justify-between gap-5 rounded-3xl bg-white/[0.04] px-5 py-4">
+ 
+          <label className="flex items-center justify-between gap-5 border-b border-zinc-900 pb-4">
             <span>
-              <span className="block font-semibold">{t("settings.rememberLastTool")}</span>
-              <span className="mt-1 block text-sm text-white/45">{t("settings.rememberLastToolHelp")}</span>
+              <span className="block text-xs font-semibold text-zinc-200">{t("settings.rememberLastTool")}</span>
+              <span className="mt-0.5 block text-[10px] text-zinc-500">{t("settings.rememberLastToolHelp")}</span>
             </span>
-            <input type="checkbox" checked={preferences.rememberLastTool} onChange={(event) => updatePreference("rememberLastTool", event.target.checked)} className="h-5 w-5 accent-cyan-300" />
+            <input type="checkbox" checked={preferences.rememberLastTool} onChange={(event) => updatePreference("rememberLastTool", event.target.checked)} className="h-4 w-4 accent-zinc-300" />
           </label>
-
-          <label className="flex items-center justify-between gap-5 rounded-3xl bg-white/[0.04] px-5 py-4">
+ 
+          <label className="flex items-center justify-between gap-5 pb-2">
             <span>
-              <span className="block font-semibold">{t("settings.privateMode")}</span>
-              <span className="mt-1 block text-sm text-white/45">{t("settings.privateModeHelp")}</span>
+              <span className="block text-xs font-semibold text-zinc-200">{t("settings.privateMode")}</span>
+              <span className="mt-0.5 block text-[10px] text-zinc-500">{t("settings.privateModeHelp")}</span>
             </span>
-            <input type="checkbox" checked={preferences.privateMode} onChange={(event) => updatePreference("privateMode", event.target.checked)} className="h-5 w-5 accent-cyan-300" />
+            <input type="checkbox" checked={preferences.privateMode} onChange={(event) => updatePreference("privateMode", event.target.checked)} className="h-4 w-4 accent-zinc-300" />
           </label>
-
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
-            <p className="text-sm text-white/45" role="status">{status || t("settings.status")}</p>
-            <button type="button" onClick={resetPreferences} className="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/65 transition hover:border-white/25 hover:text-white">
+ 
+          <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-zinc-900">
+            <p className="text-[10px] font-medium text-zinc-500" role="status">{status || t("settings.status")}</p>
+            <button type="button" onClick={resetPreferences} className="rounded-lg border border-zinc-800 bg-zinc-900 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-300 transition hover:bg-zinc-800 hover:text-white">
               {t("settings.reset")}
             </button>
           </div>

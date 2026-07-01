@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-02T01:12:00Z",
+  "title": "Design System: Gauss",
+  "extensions": {
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "Feedback Cyan", "canonical": "oklch(75% 0.15 200)", "tonalRamp": ["oklch(15% 0.05 200)", "oklch(30% 0.08 200)", "oklch(45% 0.11 200)", "oklch(60% 0.13 200)", "oklch(75% 0.15 200)", "oklch(85% 0.12 200)", "oklch(90% 0.08 200)", "oklch(95% 0.04 200)"] },
+      "secondary": { "role": "secondary", "displayName": "Alert Amber", "canonical": "oklch(80% 0.15 70)", "tonalRamp": ["oklch(15% 0.05 70)", "oklch(30% 0.08 70)", "oklch(45% 0.11 70)", "oklch(60% 0.13 70)", "oklch(75% 0.15 70)", "oklch(85% 0.12 70)", "oklch(90% 0.08 70)", "oklch(95% 0.04 70)"] },
+      "neutral-bg": { "role": "neutral", "displayName": "Chamber Black", "canonical": "oklch(14.5% 0 0)", "tonalRamp": ["oklch(10% 0 0)", "oklch(14.5% 0 0)", "oklch(20% 0 0)", "oklch(30% 0 0)", "oklch(50% 0 0)", "oklch(70% 0 0)", "oklch(85% 0 0)", "oklch(95% 0 0)"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display Heading", "purpose": "Main suite dashboard headlines." },
+      "body": { "displayName": "Body prose", "purpose": "Descriptions and form parameter label guidelines." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "ease-out-quint", "value": "cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Standard transition for workspace tabs and interactive card panels." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Standard action call buttons for file compiling and processing.",
+      "html": "<button class=\"ds-btn-primary\">Process Files</button>",
+      "css": ".ds-btn-primary { background: #22d3ee; color: #050605; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.16em; padding: 16px 24px; border-radius: 10px; border: none; transition: background-color 0.2s; cursor: pointer; } .ds-btn-primary:hover { background-color: #ffffff; }"
+    },
+    {
+      "name": "Utility Card",
+      "kind": "card",
+      "refersTo": "card-container",
+      "description": "Orderly toolbox utility item container.",
+      "html": "<div class=\"ds-card\"><h4>PDF Desk</h4><p>Inspect and merge PDF layouts.</p></div>",
+      "css": ".ds-card { background: #0d0e0d; border: 1px solid #202220; padding: 24px; border-radius: 16px; color: #ffffff; } .ds-card h4 { font-size: 18px; margin: 0 0 8px 0; } .ds-card p { font-size: 12px; color: rgba(255,255,255,0.7); margin: 0; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Secure Lab Chamber",
+    "overview": "Gauss is designed as a secure, local-first utility chamber. The design system rejects default cloud SaaS tropes, including neon gradients, excessive glowing particles, and cream backgrounds.",
+    "keyCharacteristics": [
+      "Absolute offline feedback: Indicators confirming zero-network activity.",
+      "Deep solid dark theme: Minimal eye strain during lengthy review sessions.",
+      "Structural layout density: Orderly groupings instead of generic repeating card walls."
+    ],
+    "rules": [
+      { "name": "The Contrast Rule", "body": "Body text must always maintain at least a 4.5:1 contrast ratio against the dark background. Using faint, low-contrast text for secondary metadata is strictly prohibited.", "section": "colors" },
+      { "name": "The Surface Frame Rule", "body": "Surfaces do not float via heavy blurs. Layout panels are delineated by flat border lines and background fills.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use full boxed borders instead of single-side color stripes for indicators.",
+      "Do limit headings to a maximum height of 4.5rem to prevent visual crowding.",
+      "Do test every text size on mobile viewports to prevent layout overflow."
+    ],
+    "donts": [
+      "Don't use decorative side-stripe accent borders on navigation items or cards.",
+      "Don't apply color gradient fills to typography.",
+      "Don't animate image assets or thumbnails on hover.",
+      "Don't use low-contrast text colors below the 4.5:1 ratio for secondary labels."
+    ]
+  }
+}

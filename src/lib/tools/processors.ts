@@ -541,9 +541,206 @@ const processText = async (files: File[], settings: ToolSettings) => {
   return { summary: `${outputs.length} text output${outputs.length === 1 ? "" : "s"} ready.`, outputs };
 };
 
+const processCreatePdf = async (files: File[], settings: ToolSettings): Promise<ToolProcessResult> => {
+  const pdf = await PDFDocument.create();
+  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  const italicFont = await pdf.embedFont(StandardFonts.HelveticaOblique);
+  const boldFont = await pdf.embedFont(StandardFonts.HelveticaBold);
+  
+  const pageSizeName = getString(settings, "pageSize", "A4");
+  const orientation = getString(settings, "orientation", "Portrait");
+  
+  let width = 595;
+  let height = 842;
+  if (pageSizeName === "Letter") {
+    width = 612;
+    height = 792;
+  } else if (pageSizeName === "Legal") {
+    width = 612;
+    height = 1008;
+  }
+  
+  if (orientation === "Landscape") {
+    const temp = width;
+    width = height;
+    height = temp;
+  }
+  
+  let page = pdf.addPage([width, height]);
+  let cursorY = height - 50;
+  const marginX = 50;
+  
+  const blocks = JSON.parse(getString(settings, "sections", "[]"));
+  
+  for (const block of blocks) {
+    if (block.type === "pagebreak") {
+      page = pdf.addPage([width, height]);
+      cursorY = height - 50;
+      continue;
+    }
+    
+    if (block.type === "image") {
+      const src = block.src || "";
+      if (src.startsWith("data:")) {
+        let embeddedImg;
+        try {
+          const base64Data = src.split(",")[1];
+          const binaryStr = atob(base64Data);
+          const len = binaryStr.length;
+          const bytes = new Uint8Array(len);
+          for (let i = 0; i < len; i++) {
+            bytes[i] = binaryStr.charCodeAt(i);
+          }
+          
+          if (src.includes("image/png")) {
+            embeddedImg = await pdf.embedPng(bytes);
+          } else {
+            embeddedImg = await pdf.embedJpg(bytes);
+          }
+        } catch {
+          // Ignore
+        }
+        
+        if (embeddedImg) {
+          const scale = 0.5;
+          const imgW = embeddedImg.width * scale;
+          const imgH = embeddedImg.height * scale;
+          const maxWidth = width - (marginX * 2);
+          let finalW = imgW;
+          let finalH = imgH;
+          if (imgW > maxWidth) {
+            finalW = maxWidth;
+            finalH = (imgH / imgW) * maxWidth;
+          }
+          
+          cursorY -= (finalH + 15);
+          if (cursorY < 50) {
+            page = pdf.addPage([width, height]);
+            cursorY = height - 50 - finalH;
+          }
+          page.drawImage(embeddedImg, { x: marginX, y: cursorY, width: finalW, height: finalH });
+          cursorY -= 10;
+        }
+      }
+      continue;
+    }
+    
+    let size = 10;
+    let currentFont = font;
+    if (block.type === "h1") {
+      size = 20;
+      currentFont = boldFont;
+      cursorY -= 15;
+    } else if (block.type === "h2") {
+      size = 14;
+      currentFont = boldFont;
+      cursorY -= 12;
+    } else {
+      cursorY -= 5;
+    }
+    
+    if (cursorY < 50) {
+      page = pdf.addPage([width, height]);
+      cursorY = height - 50 - size;
+    }
+    
+    const spans = block.spans || [];
+    const lines: any[] = [];
+    let currentLine: any[] = [];
+    let currentLineWidth = 0;
+    const maxWidth = width - (marginX * 2);
+    
+    for (const span of spans) {
+      const text = span.text || "";
+      if (!text) continue;
+      
+      let fontToUse = font;
+      if (span.bold && span.italic) fontToUse = boldFont;
+      else if (span.bold) fontToUse = boldFont;
+      else if (span.italic) fontToUse = italicFont;
+      
+      const words = text.split(/(\s+)/);
+      for (const word of words) {
+        if (!word) continue;
+        const wordWidth = fontToUse.widthOfTextAtSize(word, size);
+        if (currentLineWidth + wordWidth > maxWidth) {
+          if (currentLine.length > 0) {
+            lines.push(currentLine);
+            currentLine = [];
+            currentLineWidth = 0;
+          }
+          if (word.trim() === "") continue;
+        }
+        currentLine.push({
+          text: word,
+          bold: span.bold,
+          italic: span.italic,
+          underline: span.underline,
+          font: fontToUse,
+          width: wordWidth
+        });
+        currentLineWidth += wordWidth;
+      }
+    }
+    if (currentLine.length > 0) {
+      lines.push(currentLine);
+    }
+    
+    for (const line of lines) {
+      cursorY -= (size + 4);
+      if (cursorY < 50) {
+        page = pdf.addPage([width, height]);
+        cursorY = height - 50 - size;
+      }
+      
+      let startX = marginX;
+      if (block.align === "center" || block.align === "right") {
+        let totalLineWidth = 0;
+        for (const seg of line) totalLineWidth += seg.width;
+        if (block.align === "center") {
+          startX = marginX + (maxWidth - totalLineWidth) / 2;
+        } else {
+          startX = marginX + (maxWidth - totalLineWidth);
+        }
+      }
+      
+      let currentX = startX;
+      for (const seg of line) {
+        page.drawText(seg.text, {
+          x: currentX,
+          y: cursorY,
+          size,
+          font: seg.font,
+          color: rgb(0.1, 0.1, 0.1)
+        });
+        if (seg.underline) {
+          page.drawLine({
+            start: { x: currentX, y: cursorY - 2 },
+            end: { x: currentX + seg.width, y: cursorY - 2 },
+            thickness: 1,
+            color: rgb(0.1, 0.1, 0.1)
+          });
+        }
+        currentX += seg.width;
+      }
+    }
+    cursorY -= 4;
+  }
+  
+  const bytes = await pdf.save();
+  return {
+    summary: `Document PDF created successfully (${pdf.getPageCount()} pages).`,
+    outputs: [await createOutput("created-document.pdf", pdfBytesToBlob(bytes), "Created PDF document content successfully.")],
+  };
+};
+
 export const processTool = (tool: Tool, files: File[], settings: ToolSettings): Promise<ToolProcessResult> => {
   if (tool.id === "image") return processImages(files, settings);
-  if (tool.id === "pdf") return processPdf(files, settings);
+  if (tool.id === "create-pdf") return processCreatePdf(files, settings);
+  if (tool.id.endsWith("-pdf")) {
+    const action = tool.id === "bates-pdf" ? "Bates Stamping" : tool.id === "split-pdf" ? "Split" : "Merge";
+    return processPdf(files, { ...settings, action });
+  }
   if (tool.id === "converter") return processConverter(files, settings);
   if (tool.id === "archive") return processArchive(files, settings);
   if (tool.id === "batch") return processBatch(files, settings);

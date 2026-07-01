@@ -1,9 +1,206 @@
 import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib"
 
 self.addEventListener("message", async (event) => {
-  const { files, editorPages, settings, config } = event.data
+  const { files, toolId, editorPages, settings, config } = event.data
   
   try {
+    if (toolId === "create-pdf") {
+      const pdf = await PDFDocument.create()
+      const font = await pdf.embedFont(StandardFonts.Helvetica)
+      const italicFont = await pdf.embedFont(StandardFonts.HelveticaOblique)
+      const boldFont = await pdf.embedFont(StandardFonts.HelveticaBold)
+      
+      const pageSizeName = settings.pageSize || "A4"
+      const orientation = settings.orientation || "Portrait"
+      
+      let width = 595
+      let height = 842
+      if (pageSizeName === "Letter") {
+        width = 612
+        height = 792
+      } else if (pageSizeName === "Legal") {
+        width = 612
+        height = 1008
+      }
+      
+      if (orientation === "Landscape") {
+        const temp = width
+        width = height
+        height = temp
+      }
+      
+      let page = pdf.addPage([width, height])
+      let cursorY = height - 50
+      const marginX = 50
+      
+      const blocks = settings.sections ? JSON.parse(settings.sections) : []
+      
+      for (const block of blocks) {
+        if (block.type === "pagebreak") {
+          page = pdf.addPage([width, height])
+          cursorY = height - 50
+          continue
+        }
+        
+        if (block.type === "image") {
+          const src = block.src || ""
+          if (src.startsWith("data:")) {
+            let embeddedImg
+            try {
+              const base64Data = src.split(",")[1]
+              const binaryStr = atob(base64Data)
+              const len = binaryStr.length
+              const bytes = new Uint8Array(len)
+              for (let i = 0; i < len; i++) {
+                bytes[i] = binaryStr.charCodeAt(i)
+              }
+              
+              if (src.includes("image/png")) {
+                embeddedImg = await pdf.embedPng(bytes)
+              } else {
+                embeddedImg = await pdf.embedJpg(bytes)
+              }
+            } catch {
+              // Ignore
+            }
+            
+            if (embeddedImg) {
+              const scale = 0.5
+              const imgW = embeddedImg.width * scale
+              const imgH = embeddedImg.height * scale
+              const maxWidth = width - (marginX * 2)
+              let finalW = imgW
+              let finalH = imgH
+              if (imgW > maxWidth) {
+                finalW = maxWidth
+                finalH = (imgH / imgW) * maxWidth
+              }
+              
+              cursorY -= (finalH + 15)
+              if (cursorY < 50) {
+                page = pdf.addPage([width, height])
+                cursorY = height - 50 - finalH
+              }
+              page.drawImage(embeddedImg, { x: marginX, y: cursorY, width: finalW, height: finalH })
+              cursorY -= 10
+            }
+          }
+          continue
+        }
+        
+        let size = 10
+        let currentFont = font
+        if (block.type === "h1") {
+          size = 20
+          currentFont = boldFont
+          cursorY -= 15
+        } else if (block.type === "h2") {
+          size = 14
+          currentFont = boldFont
+          cursorY -= 12
+        } else {
+          cursorY -= 5
+        }
+        
+        if (cursorY < 50) {
+          page = pdf.addPage([width, height])
+          cursorY = height - 50 - size
+        }
+        
+        const spans = block.spans || []
+        const lines: any[] = []
+        let currentLine: any[] = []
+        let currentLineWidth = 0
+        const maxWidth = width - (marginX * 2)
+        
+        for (const span of spans) {
+          const text = span.text || ""
+          if (!text) continue
+          
+          let fontToUse = font
+          if (span.bold && span.italic) fontToUse = boldFont
+          else if (span.bold) fontToUse = boldFont
+          else if (span.italic) fontToUse = italicFont
+          
+          const words = text.split(/(\s+)/)
+          for (const word of words) {
+            if (!word) continue
+            const wordWidth = fontToUse.widthOfTextAtSize(word, size)
+            if (currentLineWidth + wordWidth > maxWidth) {
+              if (currentLine.length > 0) {
+                lines.push(currentLine)
+                currentLine = []
+                currentLineWidth = 0
+              }
+              if (word.trim() === "") continue
+            }
+            currentLine.push({
+              text: word,
+              bold: span.bold,
+              italic: span.italic,
+              underline: span.underline,
+              font: fontToUse,
+              width: wordWidth
+            })
+            currentLineWidth += wordWidth
+          }
+        }
+        if (currentLine.length > 0) {
+          lines.push(currentLine)
+        }
+        
+        for (const line of lines) {
+          cursorY -= (size + 4)
+          if (cursorY < 50) {
+            page = pdf.addPage([width, height])
+            cursorY = height - 50 - size
+          }
+          
+          let startX = marginX
+          if (block.align === "center" || block.align === "right") {
+            let totalLineWidth = 0
+            for (const seg of line) totalLineWidth += seg.width
+            if (block.align === "center") {
+              startX = marginX + (maxWidth - totalLineWidth) / 2
+            } else {
+              startX = marginX + (maxWidth - totalLineWidth)
+            }
+          }
+          
+          let currentX = startX
+          for (const seg of line) {
+            page.drawText(seg.text, {
+              x: currentX,
+              y: cursorY,
+              size,
+              font: seg.font,
+              color: rgb(0.1, 0.1, 0.1)
+            })
+            if (seg.underline) {
+              page.drawLine({
+                start: { x: currentX, y: cursorY - 2 },
+                end: { x: currentX + seg.width, y: cursorY - 2 },
+                thickness: 1,
+                color: rgb(0.1, 0.1, 0.1)
+              })
+            }
+            currentX += seg.width
+          }
+        }
+        cursorY -= 4
+      }
+      
+      const compiledBytes = await pdf.save()
+      
+      ;(self as any).postMessage({
+        success: true,
+        buffer: compiledBytes.buffer,
+        pageCount: pdf.getPageCount()
+      }, [compiledBytes.buffer])
+      
+      return
+    }
+
     // Reconstruct PDFDocument instances in worker memory
     const loadedDocs = await Promise.all(
       files.map(async (f: any) => PDFDocument.load(f.buffer))
@@ -14,7 +211,6 @@ self.addEventListener("message", async (event) => {
     const italicFont = await pdf.embedFont(StandardFonts.HelveticaOblique)
     const boldFont = await pdf.embedFont(StandardFonts.HelveticaBold)
 
-    const action = settings.action || "Merge"
     const useObjectStreams = settings.linearize !== false
     
     // Bates sequence options
@@ -22,7 +218,7 @@ self.addEventListener("message", async (event) => {
     const batesStart = Number(settings.batesStart ?? 1)
     const batesPadding = Number(settings.batesPadding ?? 6)
     const batesPosition = settings.batesPosition || "Bottom Right"
-    const applyBates = action === "Bates Stamping"
+    const applyBates = toolId === "bates-pdf"
 
     // Sandbox overlays state
     const showBates = config?.showBates ?? false
@@ -31,17 +227,51 @@ self.addEventListener("message", async (event) => {
 
     let batesCounter = batesStart
 
+    // Page range parser helper for split-pdf
+    const parsePageRange = (rangeStr: string, maxPages: number): number[] => {
+      const pages: number[] = []
+      const parts = rangeStr.split(",")
+      for (const part of parts) {
+        const trimmed = part.trim()
+        if (trimmed.includes("-")) {
+          const [start, end] = trimmed.split("-").map(Number)
+          const s = Math.max(1, isNaN(start) ? 1 : start)
+          const e = Math.min(maxPages, isNaN(end) ? maxPages : end)
+          for (let i = s; i <= e; i++) {
+            pages.push(i - 1)
+          }
+        } else {
+          const pageNum = Number(trimmed)
+          if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= maxPages) {
+            pages.push(pageNum - 1)
+          }
+        }
+      }
+      return pages.length > 0 ? pages : Array.from({ length: maxPages }, (_, i) => i)
+    }
+
     // Determine the list of pages to compile
-    const pagesToCompile = editorPages && editorPages.length > 0 
-      ? editorPages 
-      : files.flatMap((f: any, fileIndex: number) => {
-          const doc = loadedDocs[fileIndex]
-          return Array.from({ length: doc.getPageCount() }, (_, pageIndex) => ({
-            fileIndex,
-            pageIndex,
-            rotation: 0
-          }))
-        })
+    let pagesToCompile = []
+    if (editorPages && editorPages.length > 0) {
+      pagesToCompile = editorPages
+    } else if (toolId === "split-pdf" && loadedDocs.length > 0) {
+      const doc = loadedDocs[0]
+      const splitPages = parsePageRange(settings.pageRange || "1-9999", doc.getPageCount())
+      pagesToCompile = splitPages.map((pageIndex) => ({
+        fileIndex: 0,
+        pageIndex,
+        rotation: 0,
+      }))
+    } else {
+      pagesToCompile = files.flatMap((f: any, fileIndex: number) => {
+        const doc = loadedDocs[fileIndex]
+        return Array.from({ length: doc.getPageCount() }, (_, pageIndex) => ({
+          fileIndex,
+          pageIndex,
+          rotation: 0
+        }))
+      })
+    }
 
     for (let index = 0; index < pagesToCompile.length; index++) {
       const item = pagesToCompile[index]
@@ -54,7 +284,7 @@ self.addEventListener("message", async (event) => {
       }
 
       // 2. Vector Grayscale Filter (Specification 4: non-destructive color conversion)
-      if (settings.grayscale) {
+      if (toolId === "grayscale-pdf") {
         // Draw full-page visual light gray overlay with low opacity
         // to convert the visual color space of images/vectors non-destructively
         copiedPage.drawRectangle({

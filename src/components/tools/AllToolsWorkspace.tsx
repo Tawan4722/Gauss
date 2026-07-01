@@ -32,9 +32,9 @@ export default function AllToolsWorkspace() {
   }, [router])
 
   return (
-    <div className="min-h-screen bg-[#050605] flex items-center justify-center text-white/40 text-xs tracking-[0.2em] uppercase">
-      <div className="flex flex-col items-center gap-3">
-        <span className="h-5 w-5 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent" />
+    <div className="min-h-screen bg-black flex items-center justify-center text-zinc-500 text-xs tracking-[0.2em] uppercase">
+      <div className="flex flex-col items-center gap-3 animate-pulse">
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-650 border-t-transparent" />
         <span>Initializing Workspace...</span>
       </div>
     </div>
