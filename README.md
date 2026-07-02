@@ -1,251 +1,97 @@
-# Gauss
-
-Gauss is a private, browser-first, all-in-one file utility workspace built with Next.js. It lets users upload files, choose a tool, adjust options, process files locally, and download real outputs without requiring an account or server upload pipeline.
-
-Gauss รองรับภาษาไทยและอังกฤษ ผู้ใช้สามารถสลับภาษาได้จากปุ่มภาษาในแถบนำทาง และค่าภาษาจะถูกบันทึกไว้ในเบราว์เซอร์
-
-## Features
-
-- Bilingual UI: English and Thai.
-- Proper Thai typography using Noto Sans Thai.
-- All-in-one workspace at `/tools` with a balanced segmented tool picker.
-- Individual routes for every tool, for example `/tools/image` and `/tools/pdf`.
-- Local browser processing for supported workflows.
-- Drag-and-drop file upload.
-- Per-tool options and real downloadable outputs.
-- Local settings stored in `localStorage`.
-
-## Tools
-
-### Image Lab
-
-Supported input: images.
-
-Functions:
-
-- Convert to `Original`, `WebP`, `PNG`, `JPEG`, or `AVIF` when supported by the browser.
-- Adjust quality.
-- Resize with `Keep size`, `Fit box`, `Exact size`, `Width only`, or `Height only`.
-- Rotate by `0`, `90`, `180`, or `270` degrees.
-- Apply `None`, `Grayscale`, `Sepia`, or `Invert` effects.
-- Flip horizontally.
-
-Note: If a browser cannot encode AVIF, Gauss falls back to PNG output.
-
-### PDF Desk
-
-Supported input: PDFs.
-
-Functions:
-
-- Inspect PDF page counts and sizes.
-- Merge PDFs.
-- Split PDFs into one file per page.
-- Re-save PDFs with object streams enabled or disabled.
-- Extract selected page ranges, for example `1-3,5`.
-
-### Format Converter
-
-Supported input: any file.
-
-Output choices:
-
-- Keep original with renamed output.
-- `PDF`
-- `PNG`
-- `JPEG`
-- `WebP`
-- `TXT`
-- `JSON`
-- `CSV`
-- `Data URL`
-- `ZIP`
-
-For unsupported binary-to-image conversions, Gauss creates a label image that represents the file metadata instead of pretending a true binary conversion happened.
-
-### Archive Bench
-
-Supported input: any file.
-
-Functions:
-
-- Create ZIP archives.
-- Choose compression level from `0` to `9`.
-- Organize files flat, by extension, or by MIME type.
-- Optionally include a JSON manifest.
-
-### Batch Console
-
-Supported input: any file.
-
-Functions:
-
-- Rename files using patterns like `{index}-{name}`.
-- Sort files into folders by extension.
-- Tag files and include a tag manifest.
-- Convert output names to lowercase or uppercase.
-- Rename files using numbers only.
-
-### OCR Station
-
-Supported input: images and text files.
-
-Functions:
-
-- Extract text from images using Tesseract.js.
-- Languages: English, Thai, Japanese, or combined auto mode.
-- Optional contrast preprocessing.
-- Export as `TXT`, `JSON`, or `ZIP`.
-
-Note: OCR language data is downloaded by Tesseract.js on first use.
-
-### Metadata Inspector
-
-Supported input: any file.
-
-Functions:
-
-- Export file inventory as `JSON`, `CSV`, `TXT`, or `HTML`.
-- Include name, type, size, extension, and modified time.
-- Optionally include Data URLs for small files.
-
-### Checksum Forge
-
-Supported input: any file.
-
-Functions:
-
-- Generate `SHA-256`, `SHA-384`, or `SHA-512` hashes.
-- Export as `TXT`, `CSV`, or `JSON`.
-
-### Text Workshop
-
-Supported input: text-like files.
-
-Functions:
-
-- Clean whitespace.
-- Uppercase.
-- Lowercase.
-- Word count.
-- Sort lines.
-- Deduplicate lines.
-- Export as `TXT`, `JSON`, `CSV`, or `HTML`.
-
-## สรุปภาษาไทย
-
-Gauss คือเว็บแอปจัดการไฟล์แบบครบในที่เดียว เน้นความเป็นส่วนตัวและประมวลผลในเบราว์เซอร์ ผู้ใช้เลือกเครื่องมือ อัปโหลดไฟล์ ปรับตัวเลือก แล้วดาวน์โหลดผลลัพธ์ได้ทันที
-
-เครื่องมือหลัก:
-
-- รูปภาพ: แปลงไฟล์ ปรับขนาด หมุน พลิก และใส่เอฟเฟกต์
-- PDF: ตรวจสอบ รวม แยก บีบอัด และดึงหน้า
-- แปลงไฟล์: ส่งออกเป็น PDF รูปภาพ TXT JSON CSV Data URL ZIP หรือเก็บต้นฉบับพร้อมเปลี่ยนชื่อ
-- ZIP: รวมไฟล์เป็น ZIP พร้อมจัดโฟลเดอร์และแนบ manifest
-- งานชุด: เปลี่ยนชื่อ จัดเรียง ติดแท็ก เปลี่ยนตัวพิมพ์ หรือใส่เลขหลายไฟล์พร้อมกัน
-- OCR: อ่านข้อความจากรูปภาพด้วย Tesseract.js
-- ข้อมูลไฟล์: สร้างรายงานชื่อไฟล์ ประเภท ขนาด และเวลาแก้ไข
-- แฮช: สร้าง checksum สำหรับตรวจสอบไฟล์หรือเช็กไฟล์ซ้ำ
-- ข้อความ: ล้างช่องว่าง เปลี่ยนตัวพิมพ์ นับคำ เรียงบรรทัด และลบบรรทัดซ้ำ
-
-## Tech Stack
-
-- Next.js 16 App Router
-- React 19
-- TypeScript
-- Tailwind CSS 4
-- Framer Motion
-- JSZip
-- pdf-lib
-- Tesseract.js
-
-## Project Structure
-
-```text
-src/app/                  App Router pages and layout
-src/components/layout/    Top navigation
-src/components/tools/     All-in-one workspace and tool UI
-src/components/settings/  Local settings UI
-src/lib/i18n.tsx          English/Thai language provider
-src/lib/tools/registry.ts Tool definitions and settings schemas
-src/lib/tools/processors.ts Browser-side file processors
-```
-
-## Development
-
-Install dependencies:
-
-```bash
-npm install
-```
-
-Run development mode:
-
-```bash
-npm run dev
-```
-
-Open:
-
-```text
-http://localhost:3000
-```
-
-Build production output:
-
-```bash
-npm run build
-```
-
-Run the production build locally:
-
-```bash
-npm run start
-```
-
-Lint:
-
-```bash
-npm run lint
-```
-
-## Routes
-
-- `/` - Landing page
-- `/tools` - All-in-one workspace
-- `/tools/image` - Image Lab
-- `/tools/pdf` - PDF Desk
-- `/tools/converter` - Format Converter
-- `/tools/archive` - Archive Bench
-- `/tools/batch` - Batch Console
-- `/tools/ocr` - OCR Station
-- `/tools/metadata` - Metadata Inspector
-- `/tools/checksum` - Checksum Forge
-- `/tools/text` - Text Workshop
-- `/settings` - Local workspace settings
-
-## Privacy Model
-
-Gauss is designed as a browser-first utility. Selected files are processed in the browser for the implemented tools. The app does not require accounts, cloud upload, or a backend processing server.
-
-## Current Limitations
-
-- Browser APIs cannot perform every possible file conversion. Unsupported binary conversions are represented honestly as metadata label outputs.
-- AVIF encoding depends on browser support and may fall back to PNG.
-- OCR can be slow on large images and needs Tesseract language data on first use.
-- PDF compression is a browser-side re-save/optimization pass, not a full commercial PDF optimizer.
-
-## Deployment
-
-The repository root is a Vercel-ready Next.js app. Import the repository in Vercel with:
-
-- Framework Preset: `Next.js`
-- Root Directory: repository root
-- Install Command: `npm ci`
-- Build Command: `npm run build`
-
-The included `vercel.json` pins those build settings for Vercel deployments. The build script clears Vercel preview-comments injection before running Next.js to avoid the current Next 16/Vercel adapter config mutation issue. Build locally with:
-
-```bash
-npm run build
-```
+# Gauss Document Studio 🔒
+
+Gauss Document Studio is a private, high-fidelity, local-first offline workspace that combines a **Microsoft Word & Google Docs Clone** with an integrated suite of **30+ advanced PDF, security, conversion, and workflow utilities**. 
+
+Gauss runs **100% client-side in the browser**. No files, text, or signatures are ever uploaded to a server, making it a perfect tool for privacy-sensitive professionals (lawyers, researchers, and office operators) who work under strict compliance guidelines.
+
+---
+
+## 🌟 Why Gauss Document Studio Was Created
+
+1. **Absolute Data Privacy**: Online PDF tools and cloud document processors require you to upload confidential files to external servers. Gauss processes everything in browser sandbox memory.
+2. **Local Web Worker Execution**: Large compilation tasks and heavy parsing filters are offloaded to background threads (`pdf.worker.ts`) to maintain a fluid 60FPS UI.
+3. **Cohesive Workspace Integration**: Instead of separate isolated toolpages, Gauss unifies all utilities into a single document-centric studio. You can edit text, insert check boxes, visually redact items, sign, or chain actions into a single workflow.
+
+---
+
+## 🛠️ Complete Feature Index
+
+### 1. Document Editor (Word/Docs Clone Core)
+* **Local-First Database**: Persistent document profiles saved in local browser storage.
+* **Rich Styling Toolbar**: Font Family, Font Size, Bold, Italic, Underline, Strikethrough, Text Color, and Highlight options.
+* **Paragraph Alignments**: Left, Center, Right, Justify alignment, bulleted lists, numbered lists, and indents.
+* **Insertions**: Layout tables, images (attachments/local), hyperlinks, and page breakers.
+* **Layout Presets**: Margin profiles (Normal, Narrow, Wide), page size configurations (A4, Letter, Legal), and page orientation switches (Portrait, Landscape).
+* **Ruler & Canvas**: Angled visual watermarks and dynamic page numbering rendered in real-time.
+
+### 2. Interactive PDF Forms
+* **Form Field Designer**: Insert fillable text boxes, checkbox inputs, or select dropdown selectors into the document canvas.
+* **Interactive PDF Export**: These elements compile directly into native, interactive PDF form controls.
+
+### 3. PDF Page Operations
+* **Organize PDF**: Visual page grid preview. Drag, reorder, delete, or insert blank pages.
+* **Rotate PDF**: Rotates pages individually or globally by 90°, 180°, or 270°.
+* **Crop PDF**: Trim borders and adjust cropping box dimensions via slider points.
+* **Merge & Split PDF**: Drag-and-drop multiple PDFs to merge them into one file, or split page ranges (`1-3,5`) into individual PDFs.
+* **Compress PDF**: Optimize object streams and adjust image compression parameters to shrink file size.
+* **Repair PDF**: Re-align structural headers and reconstruct corrupted cross-reference tables locally.
+* **OCR PDF**: Scan images or scanned pages with local OCR (Tesseract.js) to extract searchable, copyable text.
+
+### 4. Converter Suite
+* **Convert to PDF**:
+  * **Word to PDF**: Compile editor paragraphs to clean PDF page nodes.
+  * **Excel to PDF**: Import tabular spreadsheets (CSV) and layout clean gridlines.
+  * **PowerPoint to PDF**: Structure outline summaries into styled presentation frames.
+  * **HTML to PDF**: Read and layout raw HTML code into standard PDF templates.
+  * **Scan to PDF**: webcam/device camera scanner simulator with perspective outline boundaries and shutter frames.
+* **Convert from PDF**:
+  * **PDF to JPG**: Zipped high-res JPEG slide extraction.
+  * **PDF to Word**: Convert PDF blocks into editable paragraphs in the Docs editor canvas.
+  * **PDF to PPT**: Map PDF content into presentation slides.
+  * **PDF to Excel**: Parse layout tables and download CSV spreadsheets.
+  * **PDF to PDF/A**: Stamp conformance headers and archival metadata profiles.
+
+### 5. Document Security & Trust
+* **Protect PDF**: Secure files locally with user and owner passwords.
+* **Unlock PDF**: Decrypt password-protected files in Gauss sandbox.
+* **Electronic Signatures**: Canvas pad to draw cursive signatures, type styled scripts, or stamp signature images.
+* **Redact PDF**: Use a visual redaction brush to blackout sensitive text or shapes permanently.
+* **Compare PDF**: Highlight insertions and deletions between two document versions side-by-side.
+
+### 6. AI Suite & Productivity Tools
+* **AI Summarizer**: Offline summarization, key points extractor, reading times estimator, and readability score calculator.
+* **Translate PDF**: Stamp localized translation layers (Thai, Japanese, Spanish, German) onto pages.
+* **Custom Workflows**: Chain multiple operations (e.g. *OCR Scan -> Grayscale Vector -> Add Watermark -> Encrypt*) in a visual node pipeline and execute them in sequence.
+* **Cloud Mirror Simulator**: Connection sync triggers for Google Drive & Dropbox backups with live mirror logging.
+* **Device Preview Frames**: Wrapper chassis frames simulating app runtime on macOS, Windows, iOS iPhone, and Android.
+* **Developer API Sandbox**: Visual sandbox console presenting JSON request/response formats.
+
+---
+
+## 💻 Tech Stack
+
+* **Core Framework**: Next.js 16 (Turbopack) & React 19
+* **Styling**: Tailwind CSS 4
+* **Local Parsing**: `pdf-lib` (PDF compilation/saving) & `JSZip` (archiving)
+* **Local Vision**: `Tesseract.js` (OCR text scanning)
+* **State & Icons**: Lucide React icons & React local state management
+
+---
+
+## 🚀 Development Setup
+
+1. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
+
+2. **Run Development Server**:
+   ```bash
+   npm run dev
+   ```
+   Open `http://localhost:3000` to access the studio.
+
+3. **Verify Builds & Lints**:
+   ```bash
+   npm run build
+   ```

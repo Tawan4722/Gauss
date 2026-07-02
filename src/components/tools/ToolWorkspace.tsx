@@ -1,1161 +1,1130 @@
 'use client'
 
-import { useMemo, useRef, useState, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import Link from "next/link"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { useRouter } from "next/navigation"
-
-import { useLanguage } from "@/lib/i18n"
-import { processTool, type ToolOutput } from "@/lib/tools/processors"
-import {
-  getDefaultSettings,
-  getToolById,
-  toolRegistry,
-  type ToolSetting,
-  type ToolSettingValue,
-  type ToolSettings,
-} from "@/lib/tools/registry"
-import { cn } from "@/lib/utils"
-import {
-  Image as ImageIcon,
-  ScanText,
-  FileText,
-  FolderArchive,
-  Hash,
-  Info,
-  Type,
-  Layers,
-  Sparkles,
-  Upload,
-  Trash2,
-  Download,
-  Check,
-  ChevronRight,
-  Settings,
-  AlertCircle,
-  FolderOpen,
-  ArrowLeft,
-  ArrowRight,
-  RotateCw,
-  RefreshCw,
-  LayoutGrid,
-  Scissors,
-  FilePlus,
-  ArrowUp,
-  ArrowDown
+import { 
+  FileText, PlusCircle, Trash2, FolderPlus, Download, CheckCircle, RefreshCw, Layers,
+  Lock, Unlock, Shield, PenTool, Minimize, Maximize, Sparkles, Languages,
+  HelpCircle, Sliders, Play, Server, Cloud, Cpu, Smartphone, Monitor, Code, Eye,
+  RefreshCcw, Compass, ArrowRight, RotateCw, ZoomIn, ZoomOut, Check, ChevronDown, Trash, Camera
 } from "lucide-react"
+import WordEditor from "./WordEditor"
+import { toolRegistry, type Tool, type ToolSettings } from "@/lib/tools/registry"
+import { processTool, type ToolOutput } from "@/lib/tools/processors"
 
-import LayoutSandbox, { type SandboxConfig } from "@/components/tools/LayoutSandbox"
-import WordEditor from "@/components/tools/WordEditor"
-
-// Icon mapping helper for tools
-const toolIconMap: Record<string, React.ComponentType<any>> = {
-  image: ImageIcon,
-  ocr: ScanText,
-  "merge-pdf": Layers,
-  "split-pdf": Scissors,
-  "bates-pdf": Hash,
-  "watermark-pdf": Type,
-  "grayscale-pdf": FileText,
-  "create-pdf": FilePlus,
-  text: Type,
-  converter: Sparkles,
-  archive: FolderArchive,
-  batch: Layers,
-  metadata: Info,
-  checksum: Hash,
-}
-
-// Category translation keys mapping
-const categoryKeyMap: Record<string, string> = {
-  "Media & Vision": "category.media",
-  "Documents & Text": "category.docs",
-  "File Operations": "category.files",
-  "Data & Security": "category.security",
-}
-
-const bytesToSize = (bytes: number) => {
-  if (bytes === 0) return "0 B"
-
-  const units = ["B", "KB", "MB", "GB"]
-  const unitIndex = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
-  const value = bytes / 1024 ** unitIndex
-
-  return `${value.toFixed(value >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`
-}
-
-const downloadBlob = (blob: Blob, filename: string) => {
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement("a")
-
-  anchor.href = url
-  anchor.download = filename
-  anchor.click()
-  window.setTimeout(() => URL.revokeObjectURL(url), 0)
-}
-
-// Specification 6: Asynchronous MIME-type file signature (magic number) verification
-const getFileSignatureMatches = (file: File, acceptedTypes: string[]): Promise<boolean> => {
-  if (acceptedTypes.includes("*/*")) return Promise.resolve(true)
-
-  return new Promise((resolve) => {
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      if (!reader.result || !(reader.result instanceof ArrayBuffer)) {
-        resolve(false)
-        return
-      }
-
-      const arr = new Uint8Array(reader.result)
-      let header = ""
-      for (let i = 0; i < Math.min(arr.length, 8); i++) {
-        header += arr[i].toString(16).padStart(2, "0").toUpperCase()
-      }
-
-      // Read binary header patterns
-      const isPdf = header.startsWith("25504446") // %PDF
-      const isPng = header.startsWith("89504E47") // \x89PNG
-      const isJpeg = header.startsWith("FFD8FF")   // JPEG start
-      const isGif = header.startsWith("47494638")  // GIF8
-      const isZip = header.startsWith("504B0304")  // PK ZIP
-
-      const matches = acceptedTypes.some((type) => {
-        if (type.includes("pdf")) return isPdf
-        if (type.includes("png")) return isPng
-        if (type.includes("jpeg") || type.includes("jpg")) return isJpeg
-        if (type.includes("gif")) return isGif
-        if (type.includes("zip") || type.includes("archive")) return isZip
-        if (type.includes("image/")) return isPng || isJpeg || isGif
-        
-        // Fallback to name match for text files
-        if (type.endsWith("/*")) return file.type.startsWith(type.replace("/*", "/"))
-        if (type.startsWith(".")) return file.name.toLowerCase().endsWith(type.toLowerCase())
-        return file.type === type
-      })
-
-      resolve(matches)
-    }
-
-    // Read first 8 bytes of the file for binary pattern verification
-    reader.readAsArrayBuffer(file.slice(0, 8))
-  })
-}
-
-function SettingControl({
-  toolId,
-  setting,
-  value,
-  onChange,
-}: {
-  toolId: string
-  setting: ToolSetting
-  value: ToolSettingValue
-  onChange: (value: ToolSettingValue) => void
-}) {
-  const { settingText, optionText } = useLanguage()
-  const id = `setting-${setting.name}`
-  const label = settingText(toolId, setting.name, setting.label)
-
-  if (setting.type === "checkbox") {
-    return (
-      <label className="flex items-center justify-between gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3.5 text-sm text-white/75 cursor-pointer hover:bg-white/[0.04] transition duration-200">
-        <span>{label}</span>
-        <input
-          id={id}
-          type="checkbox"
-          checked={Boolean(value)}
-          onChange={(event) => onChange(event.target.checked)}
-          className="h-4 w-4 rounded border-white/20 bg-zinc-950 text-cyan-400 accent-cyan-300 focus:ring-cyan-500/30"
-        />
-      </label>
-    )
+// Templates for Local Documents Explorer
+const DOCUMENT_TEMPLATES = [
+  {
+    id: "template-blank",
+    title: "Blank Document",
+    content: `<h1 style="font-family:'Geist Sans';font-size:24pt;color:#22d3ee;margin:0 0 16px;">New Document</h1><p style="font-family:'Geist Sans';font-size:11pt;color:#e4e4e7;">Start writing here...</p>`
+  },
+  {
+    id: "template-resume",
+    title: "Professional Resume",
+    content: `<h1 style="font-family:'Geist Sans';font-size:28pt;color:#22d3ee;margin:0 0 4px;font-weight:bold;">ALEX MORTON</h1>
+              <p style="color:#a1a1aa;font-size:10pt;margin:0 0 20px;">San Francisco, CA | alex@gauss.local | (555) 019-2831</p>
+              <h2 style="font-size:14pt;color:#22d3ee;border-bottom:1px solid #27272a;padding-bottom:4px;margin-top:24px;">PROFESSIONAL EXPERIENCE</h2>
+              <p style="font-weight:bold;margin:8px 0 2px;color:#f4f4f5;">Senior Systems Engineer — Gauss Labs (2024 - Present)</p>
+              <p style="font-size:10pt;color:#d4d4d8;">Led the development of privacy-first client-side document processing architectures. Offloaded computationally intensive file streams to local web worker threads, resulting in a 40% reduction in CPU rendering delay.</p>`
+  },
+  {
+    id: "template-proposal",
+    title: "Project Proposal",
+    content: `<h1 style="font-family:'Geist Sans';font-size:26pt;color:#22d3ee;margin:0 0 8px;font-weight:bold;">PROJECT GAUSS STUDIO</h1>
+              <p style="font-size:12pt;color:#fbbf24;margin-bottom:24px;">Secure Offline Document Utilities Platform</p>
+              <h2 style="font-size:15pt;color:#22d3ee;margin-top:20px;">1. EXECUTIVE SUMMARY</h2>
+              <p style="font-size:11pt;color:#e4e4e7;line-height:1.6;">Gauss is designed to address the growing corporate demand for highly private document formatting, file conversions, and OCR scans. Traditional SaaS tools require constant transit of legal contracts and financial data. Gauss operates 100% locally inside client browser memory, offering zero network overhead and total data safety.</p>`
+  },
+  {
+    id: "template-contract",
+    title: "NDA Legal Agreement",
+    content: `<h1 style="font-family:'Geist Sans';font-size:20pt;color:#22d3ee;text-align:center;margin:0 0 24px;font-weight:bold;">MUTUAL NON-DISCLOSURE AGREEMENT</h1>
+              <p style="font-size:10pt;color:#e4e4e7;line-height:1.7;">This Mutual Non-Disclosure Agreement ("Agreement") is entered into this day by and between the Undersigned Parties for the purpose of preventing the unauthorized disclosure of Confidential Information shared during joint development sessions.</p>
+              <p style="font-size:10pt;color:#e4e4e7;line-height:1.7;margin-top:12px;"><strong>1. Definition of Confidential Information.</strong> Confidential Information includes all proprietary formulas, file encryption schemas, and local-first browser architectures disclosed under the Gauss security lab protocol.</p>`
   }
+]
 
-  if (setting.type === "select") {
-    return (
-      <label className="grid gap-2 text-sm text-white/70" htmlFor={id}>
-        <span>{label}</span>
-        <select
-          id={id}
-          value={String(value)}
-          onChange={(event) => onChange(event.target.value)}
-          className="rounded-2xl border border-white/[0.08] bg-zinc-950 px-4 py-3 text-white outline-none transition focus:border-cyan-300/60 focus:ring-1 focus:ring-cyan-300/60 hover:bg-zinc-900/60 cursor-pointer"
-        >
-          {setting.options?.map((option) => (
-            <option key={option} value={option}>
-              {optionText(option)}
-            </option>
-          ))}
-        </select>
-      </label>
-    )
-  }
-
-  if (setting.type === "slider") {
-    return (
-      <label className="grid gap-3 text-sm text-white/70" htmlFor={id}>
-        <span className="flex items-center justify-between gap-3">
-          <span>{label}</span>
-          <span className="rounded-full bg-cyan-400/10 border border-cyan-400/20 px-2.5 py-0.5 text-xs text-cyan-300 font-bold">{String(value)}</span>
-        </span>
-        <input
-          id={id}
-          type="range"
-          min={setting.min}
-          max={setting.max}
-          step={setting.step ?? 1}
-          value={Number(value)}
-          onChange={(event) => onChange(Number(event.target.value))}
-          className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-white/10 accent-cyan-300 outline-none hover:bg-white/15"
-        />
-      </label>
-    )
-  }
-
-  return (
-    <label className="grid gap-2 text-sm text-white/70" htmlFor={id}>
-      <span>{label}</span>
-      <input
-        id={id}
-        type="text"
-        value={String(value)}
-        onChange={(event) => onChange(event.target.value)}
-        className="rounded-2xl border border-white/[0.08] bg-white/[0.02] px-4 py-3 text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/60 focus:ring-1 focus:ring-cyan-300/60 hover:bg-white/[0.04]"
-      />
-    </label>
-  )
-}
-
-const fileToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
-}
-
-const getRichTextJSON = (element: HTMLDivElement) => {
-  const blocks: any[] = []
-  const children = Array.from(element.childNodes)
-  
-  for (const node of children) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent?.trim()
-      if (text) {
-        blocks.push({
-          type: "p",
-          align: "left",
-          spans: [{ text, bold: false, italic: false, underline: false }]
-        })
-      }
-    } else if (node.nodeType === Node.ELEMENT_NODE) {
-      const el = node as HTMLElement
-      const tagName = el.tagName.toLowerCase()
-      
-      let align = el.style.textAlign || "left"
-      
-      if (tagName === "h1" || tagName === "h2" || tagName === "h3" || tagName === "p" || tagName === "div" || tagName === "li") {
-        const spans: any[] = []
-        const extractSpans = (currNode: Node, isBold = false, isItalic = false, isUnderline = false) => {
-          if (currNode.nodeType === Node.TEXT_NODE) {
-            spans.push({
-              text: currNode.textContent || "",
-              bold: isBold,
-              italic: isItalic,
-              underline: isUnderline
-            })
-          } else if (currNode.nodeType === Node.ELEMENT_NODE) {
-            const childEl = currNode as HTMLElement
-            const childTag = childEl.tagName.toLowerCase()
-            const bold = isBold || childTag === "b" || childTag === "strong" || childEl.style.fontWeight === "bold"
-            const italic = isItalic || childTag === "i" || childTag === "em" || childEl.style.fontStyle === "italic"
-            const underline = isUnderline || childTag === "u" || childEl.style.textDecoration === "underline"
-            
-            for (const child of Array.from(childEl.childNodes)) {
-              extractSpans(child, bold, italic, underline)
-            }
-          }
-        }
-        
-        for (const child of Array.from(el.childNodes)) {
-          extractSpans(child)
-        }
-        
-        blocks.push({
-          type: tagName === "div" || tagName === "li" ? "p" : tagName,
-          align,
-          spans
-        })
-      } else if (tagName === "hr") {
-        blocks.push({
-          type: "pagebreak"
-        })
-      } else if (tagName === "img") {
-        const src = el.getAttribute("src") || ""
-        blocks.push({
-          type: "image",
-          src
-        })
-      } else if (tagName === "ul" || tagName === "ol") {
-        // Fallback for nested lists - extract li items recursively
-        for (const child of Array.from(el.childNodes)) {
-          if (child.nodeType === Node.ELEMENT_NODE && (child as HTMLElement).tagName.toLowerCase() === "li") {
-            const spans: any[] = []
-            const extractSpans = (currNode: Node, isBold = false, isItalic = false, isUnderline = false) => {
-              if (currNode.nodeType === Node.TEXT_NODE) {
-                spans.push({
-                  text: currNode.textContent || "",
-                  bold: isBold,
-                  italic: isItalic,
-                  underline: isUnderline
-                })
-              } else if (currNode.nodeType === Node.ELEMENT_NODE) {
-                const childEl = currNode as HTMLElement
-                const childTag = childEl.tagName.toLowerCase()
-                const bold = isBold || childTag === "b" || childTag === "strong" || childEl.style.fontWeight === "bold"
-                const italic = isItalic || childTag === "i" || childTag === "em" || childEl.style.fontStyle === "italic"
-                const underline = isUnderline || childTag === "u" || childEl.style.textDecoration === "underline"
-                
-                for (const gc of Array.from(childEl.childNodes)) {
-                  extractSpans(gc, bold, italic, underline)
-                }
-              }
-            }
-            for (const gc of Array.from(child.childNodes)) {
-              extractSpans(gc)
-            }
-            blocks.push({
-              type: "p",
-              align: "left",
-              spans: [{ text: "• ", bold: true, italic: false, underline: false }, ...spans]
-            })
-          }
-        }
-      }
-    }
-  }
-  return blocks
-}
-
-interface EditorPage {
+interface DocumentRecord {
   id: string
-  fileIndex: number
-  pageIndex: number
-  rotation: number
-  originalFileName: string
+  title: string
+  content: string
+  updatedAt: string
 }
 
-export default function ToolWorkspace({ toolId }: { toolId: string }) {
-  const tool = getToolById(toolId)
+export default function ToolWorkspace({ toolId: initialToolId }: { toolId: string }) {
   const router = useRouter()
-  const { t, toolText } = useLanguage()
-  const inputRef = useRef<HTMLInputElement>(null)
   const editorRef = useRef<HTMLDivElement>(null)
-  const [files, setFiles] = useState<File[]>([])
-  const [settings, setSettings] = useState<ToolSettings>(() => (tool ? getDefaultSettings(tool) : {}))
+
+  // Core Active tool selections
+  const [activeToolId, setActiveToolId] = useState(initialToolId || "editor")
+  const activeTool = useMemo(() => toolRegistry.find(t => t.id === activeToolId) || toolRegistry[0], [activeToolId])
+
+  // Left Sidebar panel tabs
+  const [leftTab, setLeftTab] = useState<"docs" | "workflows" | "cloud" | "simulators" | "api">("docs")
+
+  // Documents list states (saved to localStorage)
+  const [documents, setDocuments] = useState<DocumentRecord[]>([])
+  const [activeDocId, setActiveDocId] = useState("")
+
+  // Device Simulator wrapper layout configurations
+  const [deviceWrapper, setDeviceWrapper] = useState<"none" | "macos" | "windows" | "iphone" | "android">("none")
+
+  // PDF settings & upload hooks
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
+  const [toolSettings, setToolSettings] = useState<ToolSettings>({})
+  const [processing, setProcessing] = useState(false)
   const [outputs, setOutputs] = useState<ToolOutput[]>([])
-  const [summary, setSummary] = useState("")
-  const [notice, setNotice] = useState("")
-  const [isDragging, setIsDragging] = useState(false)
-  const [isProcessing, setIsProcessing] = useState(false)
-  
-  // Custom states for PDF Maker
-  const [sections, setSections] = useState<{ id: string; type: "heading" | "subheading" | "paragraph" | "image" | "pagebreak"; text?: string; fileIndex?: number }[]>(() => [
-    { id: "1", type: "heading", text: "New PDF Document" },
-    { id: "2", type: "paragraph", text: "Start writing your content here..." }
+  const [processLog, setProcessLog] = useState("")
+
+  // Interactive signature drawing pad modal state
+  const [sigModalOpen, setSigModalOpen] = useState(false)
+  const [sigPoints, setSigPoints] = useState<{ x: number; y: number }[]>([])
+  const [isDrawing, setIsDrawing] = useState(false)
+  const sigCanvasRef = useRef<HTMLCanvasElement>(null)
+
+  // Document formatting configurations
+  const [watermarkText, setWatermarkText] = useState("")
+  const [showPageNumbers, setShowPageNumbers] = useState(true)
+  const [margins, setMargins] = useState("normal")
+  const [orientation, setOrientation] = useState<"Portrait" | "Landscape">("Portrait")
+  const [pageSize, setPageSize] = useState<"A4" | "Letter" | "Legal">("A4")
+
+  // Simulated AI panels
+  const [aiReport, setAiReport] = useState<{ summary: string; bullets: string[]; stats: string } | null>(null)
+  const [aiChatQuery, setAiChatQuery] = useState("")
+  const [aiChatLogs, setAiChatLogs] = useState<{ role: "user" | "assistant"; text: string }[]>([
+    { role: "assistant", text: "Offline Gauss AI Assistant ready. Ask me to summarize, extract key metadata terms, or rewrite selected document content." }
   ])
+
+  // Custom Workflows stack list
+  const [workflowStack, setWorkflowStack] = useState<string[]>(["merge-pdf", "watermark-pdf", "protect-pdf"])
+  const [workflowLog, setWorkflowLog] = useState<string[]>([])
+  const [workflowRunning, setWorkflowRunning] = useState(false)
+
+  // Cloud backup sync simulators logs
+  const [cloudSyncedFiles, setCloudSyncedFiles] = useState<string[]>([])
+  const [gdriveConnected, setGdriveConnected] = useState(false)
+  const [dropboxConnected, setDropboxConnected] = useState(false)
+  const [syncLogs, setSyncLogs] = useState<string[]>(["Local environment ready. Connection initialized."])
+
+  // Camera stream simulator (Scan to PDF)
+  const [cameraActive, setCameraActive] = useState(false)
+  const [capturedScans, setCapturedScans] = useState<string[]>([])
+
+  // Visual document stats counter
   const [wordCount, setWordCount] = useState(0)
-  const [estimatedPages, setEstimatedPages] = useState(1)
+  const [charCount, setCharCount] = useState(0)
+  const pageCount = Math.max(1, Math.ceil(wordCount / 300))
 
-  // Layout Sandbox & PDF Editor States
-  const [editorPages, setEditorPages] = useState<EditorPage[]>([])
-  const [workspaceView, setWorkspaceView] = useState<"visual" | "list">("visual")
-  const [sandboxOpen, setSandboxOpen] = useState(false)
-  const [sandboxConfig, setSandboxConfig] = useState<SandboxConfig | undefined>(undefined)
-
-  const acceptedLabel = useMemo(() => tool?.acceptedFileTypes.join(", ") ?? "", [tool])
-
-  // Group tools by category for the sidebar
-  const categorizedTools = useMemo(() => {
-    const groups: Record<string, typeof toolRegistry> = {}
-    toolRegistry.forEach((t) => {
-      const cat = t.category
-      if (!groups[cat]) {
-        groups[cat] = []
-      }
-      groups[cat].push(t)
-    })
-    return groups
-  }, [])
-
-  // Update saved last active tool
+  // 1. Initial Load Documents from LocalStorage
   useEffect(() => {
     try {
-      localStorage.setItem("gauss-last-tool", toolId)
-    } catch {
-      // Ignore errors
-    }
-  }, [toolId])
- 
-  useEffect(() => {
-    if (toolId === "create-pdf" && editorRef.current && !editorRef.current.innerHTML) {
-      editorRef.current.innerHTML = "<h1>New PDF Document</h1><p>Start writing your content here...</p>"
-    }
-  }, [toolId])
-
-  // Reconcile editor pages when files change (for split PDF tools)
-  useEffect(() => {
-    if (!toolId.endsWith("-pdf") || toolId === "create-pdf") return
-
-    let active = true
-
-    async function reconcile() {
-      if (files.length === 0) {
-        if (active) setEditorPages([])
-        return
-      }
-
-      try {
-        const { PDFDocument } = await import("pdf-lib")
-        const filePageCounts = await Promise.all(
-          files.map(async (file) => {
-            try {
-              const pdf = await PDFDocument.load(await file.arrayBuffer())
-              return pdf.getPageCount()
-            } catch {
-              return 0
-            }
-          })
-        )
-
-        if (!active) return
-
-        setEditorPages((prev) => {
-          const newPages: EditorPage[] = []
-
-          prev.forEach((page) => {
-            const matchIndex = files.findIndex((f) => f.name === page.originalFileName)
-            if (matchIndex !== -1) {
-              newPages.push({
-                ...page,
-                fileIndex: matchIndex,
-              })
-            }
-          })
-
-          const existingFileNames = new Set(prev.map((p) => p.originalFileName))
-          files.forEach((file, fileIndex) => {
-            if (!existingFileNames.has(file.name)) {
-              const pageCount = filePageCounts[fileIndex]
-              for (let pageIndex = 0; pageIndex < pageCount; pageIndex++) {
-                newPages.push({
-                  id: `${file.name}-${file.size}-${fileIndex}-page-${pageIndex}-${crypto.randomUUID()}`,
-                  fileIndex,
-                  pageIndex,
-                  rotation: 0,
-                  originalFileName: file.name,
-                })
-              }
-            }
-          })
-
-          return newPages
-        })
-      } catch (error) {
-        console.error("Failed to reconcile PDF pages", error)
-      }
-    }
-
-    reconcile()
-
-    return () => {
-      active = false
-    }
-  }, [files, toolId])
-
-  if (!tool) {
-    return null
-  }
-
-  const addFiles = async (incomingFiles: FileList | File[]) => {
-    const nextFiles = Array.from(incomingFiles)
-    
-    // Asynchronous MIME-type signature verification
-    const matchesArray = await Promise.all(
-      nextFiles.map(async (file) => {
-        const matches = await getFileSignatureMatches(file, tool.acceptedFileTypes)
-        return { file, matches }
-      })
-    )
-    
-    const validFiles = matchesArray.filter((item) => item.matches).map((item) => item.file)
-    const rejectedCount = nextFiles.length - validFiles.length
-
-    setFiles((currentFiles) => {
-      const existingKeys = new Set(currentFiles.map((file) => `${file.name}-${file.size}-${file.lastModified}`))
-      const uniqueFiles = validFiles.filter((file) => !existingKeys.has(`${file.name}-${file.size}-${file.lastModified}`))
-      return [...currentFiles, ...uniqueFiles]
-    })
-
-    setOutputs([])
-    setSummary("")
-    setNotice(rejectedCount > 0 ? `${rejectedCount} file${rejectedCount === 1 ? "" : "s"} did not match verified type signatures.` : "")
-  }
-
-  const removeFile = (index: number) => {
-    setFiles((currentFiles) => currentFiles.filter((_, fileIndex) => fileIndex !== index))
-    setOutputs([])
-    setSummary("")
-  }
-
-  // Page Editor Functions
-  const movePage = (index: number, direction: number) => {
-    const targetIndex = index + direction
-    if (targetIndex < 0 || targetIndex >= editorPages.length) return
-    setEditorPages((prev) => {
-      const next = [...prev]
-      const temp = next[index]
-      next[index] = next[targetIndex]
-      next[targetIndex] = temp
-      return next
-    })
-    setOutputs([])
-    setSummary("")
-  }
-
-  const rotatePage = (index: number) => {
-    setEditorPages((prev) => {
-      const next = [...prev]
-      next[index] = {
-        ...next[index],
-        rotation: (next[index].rotation + 90) % 360,
-      }
-      return next
-    })
-    setOutputs([])
-    setSummary("")
-  }
-
-  const deletePage = (index: number) => {
-    setEditorPages((prev) => prev.filter((_, idx) => idx !== index))
-    setOutputs([])
-    setSummary("")
-  }
-
-  const resetEditorLayout = async () => {
-    if (files.length === 0) return
-    try {
-      const { PDFDocument } = await import("pdf-lib")
-      const filePageCounts = await Promise.all(
-        files.map(async (file) => {
-          try {
-            const pdf = await PDFDocument.load(await file.arrayBuffer())
-            return pdf.getPageCount()
-          } catch {
-            return 0
-          }
-        })
-      )
-      const resetPages = files.flatMap((file, fileIndex) => {
-        const count = filePageCounts[fileIndex]
-        return Array.from({ length: count }, (_, pageIndex) => ({
-          id: `${file.name}-${file.size}-${fileIndex}-page-${pageIndex}-${crypto.randomUUID()}`,
-          fileIndex,
-          pageIndex,
-          rotation: 0,
-          originalFileName: file.name,
+      const saved = localStorage.getItem("gauss-docs")
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        setDocuments(parsed)
+        if (parsed.length > 0) {
+          setActiveDocId(parsed[0].id)
+        }
+      } else {
+        // Preload templates
+        const initialDocs = DOCUMENT_TEMPLATES.map(t => ({
+          id: t.id,
+          title: t.title,
+          content: t.content,
+          updatedAt: new Date().toISOString()
         }))
-      })
-      setEditorPages(resetPages)
-      setOutputs([])
-      setSummary("")
+        setDocuments(initialDocs)
+        setDocumentsInStorage(initialDocs)
+        setActiveDocId("template-blank")
+      }
     } catch (e) {
       console.error(e)
     }
+  }, [])
+
+  const setDocumentsInStorage = (docs: DocumentRecord[]) => {
+    localStorage.setItem("gauss-docs", JSON.stringify(docs))
   }
 
-  // Action processor integration (Web Workers vs Main Thread fallback)
-  const processFiles = async () => {
-    if (files.length === 0 && toolId !== "create-pdf") {
-      setNotice(t("workspace.addFiles"))
-      return
+  // 2. Switch Documents and render text content inside contentEditable
+  useEffect(() => {
+    const activeDoc = documents.find(d => d.id === activeDocId)
+    if (activeDoc && editorRef.current) {
+      editorRef.current.innerHTML = activeDoc.content
+      updateStats()
     }
+  }, [activeDocId, documents])
 
-    setIsProcessing(true)
-    setNotice("")
+  // 3. Save Active Editor Content to Local DB
+  const saveCurrentDoc = () => {
+    if (!editorRef.current || !activeDocId) return
+    const content = editorRef.current.innerHTML
+    const updatedDocs = documents.map(d => {
+      if (d.id === activeDocId) {
+        return { ...d, content, updatedAt: new Date().toISOString() }
+      }
+      return d
+    })
+    setDocuments(updatedDocs)
+    setDocumentsInStorage(updatedDocs)
+    addSyncLog("Autosaved document to local database.")
+  }
 
+  // 4. Update stats (Word count & character count)
+  const updateStats = () => {
+    if (!editorRef.current) return
+    const text = editorRef.current.innerText || ""
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0
+    setWordCount(words)
+    setCharCount(text.length)
+  }
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      saveCurrentDoc()
+      updateStats()
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [activeDocId, documents])
+
+  // 5. Add Document or load Template
+  const createNewDoc = (templateId?: string) => {
+    const template = DOCUMENT_TEMPLATES.find(t => t.id === templateId) || DOCUMENT_TEMPLATES[0]
+    const newDoc: DocumentRecord = {
+      id: `doc-${Date.now()}`,
+      title: templateId ? `Copy of ${template.title}` : "Untitled Document",
+      content: template.content,
+      updatedAt: new Date().toISOString()
+    }
+    const updated = [newDoc, ...documents]
+    setDocuments(updated)
+    setDocumentsInStorage(updated)
+    setActiveDocId(newDoc.id)
+    addSyncLog(`Created new document from template: ${newDoc.title}`)
+  }
+
+  const deleteDoc = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const filtered = documents.filter(d => d.id !== id)
+    setDocuments(filtered)
+    setDocumentsInStorage(filtered)
+    if (activeDocId === id && filtered.length > 0) {
+      setActiveDocId(filtered[0].id)
+    }
+    addSyncLog("Deleted document profile.")
+  }
+
+  // 6. Signature Pad Canvas event loops
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    setIsDrawing(true)
+    const canvas = sigCanvasRef.current
+    if (!canvas) return
+    const rect = canvas.getBoundingClientRect()
+    setSigPoints([{ x: e.clientX - rect.left, y: e.clientY - rect.top }])
+  }
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return
+    const canvas = sigCanvasRef.current
+    const ctx = canvas?.getContext("2d")
+    if (!canvas || !ctx) return
+    const rect = canvas.getBoundingClientRect()
+    const newPoint = { x: e.clientX - rect.left, y: e.clientY - rect.top }
+    setSigPoints(prev => [...prev, newPoint])
+
+    ctx.strokeStyle = "#22d3ee"
+    ctx.lineWidth = 2
+    ctx.lineCap = "round"
+    ctx.lineJoin = "round"
+    
+    ctx.beginPath()
+    const last = sigPoints[sigPoints.length - 1]
+    if (last) {
+      ctx.moveTo(last.x, last.y)
+      ctx.lineTo(newPoint.x, newPoint.y)
+      ctx.stroke()
+    }
+  }
+
+  const stopDrawing = () => {
+    setIsDrawing(false)
+  }
+
+  const clearSignature = () => {
+    const canvas = sigCanvasRef.current
+    const ctx = canvas?.getContext("2d")
+    if (canvas && ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      setSigPoints([])
+    }
+  }
+
+  const saveSignature = () => {
+    const canvas = sigCanvasRef.current
+    if (canvas) {
+      const dataUrl = canvas.toDataURL()
+      // Insert visual signature block stamp into editor
+      editorRef.current?.focus()
+      const html = `<img src="${dataUrl}" style="width:120px;height:45px;border-bottom:1px solid #444;margin:8px;" class="signature-stamp"/>`
+      document.execCommand("insertHTML", false, html)
+      setSigModalOpen(false)
+      addSyncLog("Inserted typed signature signature stamp.")
+    }
+  }
+
+  // 7. Execute PDF Action (Local Processing)
+  const handleExecuteAction = async () => {
+    setProcessing(true)
+    setProcessLog("Reading files from sandbox memory...")
     try {
-      const mergedSettings = { ...settings }
-      if (toolId === "create-pdf" && editorRef.current) {
-        const blocks = getRichTextJSON(editorRef.current)
-        mergedSettings.sections = JSON.stringify(blocks)
-      }
+      let finalFiles = [...uploadedFiles]
       
-      // Inject visual editor pages if active in PDF mode
-      if (toolId.endsWith("-pdf") && editorPages.length > 0) {
-        const compactPages = editorPages.map((p) => ({
-          fileIndex: p.fileIndex,
-          pageIndex: p.pageIndex,
-          rotation: p.rotation,
-        }))
-        mergedSettings.editorPagesJson = JSON.stringify(compactPages)
+      // If converting active document to PDF
+      if (activeToolId === "word-to-pdf" && editorRef.current) {
+        const docText = editorRef.current.innerText
+        const blob = new Blob([docText], { type: "text/plain" })
+        finalFiles = [new File([blob], `${documents.find(d => d.id === activeDocId)?.title || "document"}.docx`, { type: "text/plain" })]
       }
 
-      // Specification 6: Spawns Web Worker thread separation for PDF assembly tasks
-      if (typeof window !== "undefined" && window.Worker && toolId.endsWith("-pdf")) {
-        const fileBuffers = await Promise.all(
-          files.map(async (file) => {
-            const buffer = await file.arrayBuffer()
-            return {
-              name: file.name,
-              type: file.type,
-              buffer,
-            }
-          })
-        )
+      const result = await processTool(activeTool, finalFiles, {
+        ...toolSettings,
+        watermarkText
+      })
 
-        // Spawn pdf.worker background thread
-        const worker = new Worker(new URL("@/workers/pdf.worker.ts", import.meta.url))
-        
-        worker.onmessage = (event) => {
-          const result = event.data
-          if (result.success) {
-            const blob = new Blob([result.buffer], { type: "application/pdf" })
-            const outputName = toolId === "bates-pdf" 
-              ? "gauss-stamped.pdf" 
-              : toolId === "watermark-pdf" 
-              ? "gauss-watermarked.pdf" 
-              : toolId === "split-pdf" 
-              ? "gauss-split.pdf" 
-              : "gauss-compiled.pdf"
-            
-            const compiledOutput = {
-              id: `${outputName}-${blob.size}-${crypto.randomUUID()}`,
-              name: outputName,
-              type: "application/pdf",
-              size: blob.size,
-              blob,
-              message: `Compiled ${result.pageCount} pages in background thread.`,
-            }
-            
-            setOutputs([compiledOutput])
-            setSummary(`PDF worker compilation completed successfully. Output size: ${bytesToSize(blob.size)}.`)
-          } else {
-            setNotice(result.error || t("workspace.failed"))
-          }
-          setIsProcessing(false)
-          worker.terminate()
+      setOutputs(result.outputs)
+      setProcessLog(`COMPLETED: ${result.summary}`)
+      
+      // If converted PDF to Word, parse text content back to Word editor
+      if (activeToolId === "pdf-to-word" && result.outputs.length > 0) {
+        const text = await result.outputs[0].blob.text()
+        if (editorRef.current) {
+          editorRef.current.innerHTML = `<h1>Converted PDF Content</h1><p style="color:#22d3ee;font-weight:bold;">Successfully imported from ${result.outputs[0].name}</p><div style="margin-top:16px;">${text}</div>`
+          updateStats()
         }
-
-        worker.onerror = (err) => {
-          console.error("Worker crash", err)
-          setNotice("Web Worker background process failed to execute.")
-          setIsProcessing(false)
-          worker.terminate()
-        }
-
-        // Post array buffers inside Transferable list for zero-copy memory transit
-        const transferableList = fileBuffers.map((f) => f.buffer)
-        worker.postMessage(
-          {
-            files: fileBuffers,
-            toolId,
-            editorPages: editorPages.map((p) => ({
-              fileIndex: p.fileIndex,
-              pageIndex: p.pageIndex,
-              rotation: p.rotation,
-            })),
-            settings: mergedSettings,
-            config: sandboxConfig,
-          },
-          transferableList
-        )
-
-      } else {
-        // Fallback to main-thread processing if workers are unavailable
-        const result = await processTool(tool, files, mergedSettings)
-        setOutputs(result.outputs)
-        setSummary(result.summary)
-        setIsProcessing(false)
       }
 
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : t("workspace.failed"))
-      setIsProcessing(false)
+      // If workflow chains, mirror backup
+      triggerSyncMirror(result.outputs.map(o => o.name))
+
+    } catch (e: any) {
+      setProcessLog(`ERROR: ${e?.message || "Execution failed."}`)
     }
+    setProcessing(false)
   }
 
-  const downloadAll = async () => {
-    if (outputs.length === 1) {
-      downloadBlob(outputs[0].blob, outputs[0].name)
+  // 8. Custom Workflows pipeline execution
+  const runChainedWorkflow = async () => {
+    if (uploadedFiles.length === 0) {
+      setWorkflowLog(["Error: Upload a base document file to feed the custom chain."])
       return
     }
+    setWorkflowRunning(true)
+    setWorkflowLog(["Initializing Chain Workspace Pipeline..."])
+    
+    let currentInput = [...uploadedFiles]
+    
+    for (let i = 0; i < workflowStack.length; i++) {
+      const stepToolId = workflowStack[i]
+      const stepTool = toolRegistry.find(t => t.id === stepToolId)
+      if (!stepTool) continue
+      
+      setWorkflowLog(prev => [...prev, `[Step ${i+1}/${workflowStack.length}] Running operational filter: ${stepTool.name}...`])
+      
+      try {
+        const result = await processTool(stepTool, currentInput, { watermarkText })
+        if (result.outputs.length > 0) {
+          // Feed outputs as inputs to next step
+          currentInput = result.outputs.map(o => new File([o.blob], o.name, { type: o.type }))
+          setWorkflowLog(prev => [...prev, `  ✓ Done. Generated output: ${result.outputs[0].name}`])
+        }
+      } catch (err: any) {
+        setWorkflowLog(prev => [...prev, `  ❌ Error in step ${stepTool.name}: ${err?.message || err}`])
+        setWorkflowRunning(false)
+        return
+      }
+    }
 
-    const JSZip = (await import("jszip")).default
-    const zip = new JSZip()
+    setWorkflowLog(prev => [...prev, "✓ Pipeline completed! Preparing download headers..."])
+    
+    // Final output save
+    const finalOutputs = await Promise.all(currentInput.map(async f => ({
+      id: crypto.randomUUID(),
+      name: f.name,
+      type: f.type,
+      size: f.size,
+      blob: new Blob([await f.arrayBuffer()], { type: f.type }),
+      message: "Chained compile complete."
+    })))
+    
+    setOutputs(finalOutputs)
+    setWorkflowRunning(false)
+    triggerSyncMirror(finalOutputs.map(o => o.name))
+  }
 
-    outputs.forEach((output) => zip.file(output.name, output.blob))
-    const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 6 } })
-    downloadBlob(blob, `${tool.id}-outputs.zip`)
+  // 9. Sync & Mirror Backup Simulators
+  const triggerSyncMirror = (names: string[]) => {
+    if (!gdriveConnected && !dropboxConnected) return
+    names.forEach(name => {
+      const target = gdriveConnected ? "Google Drive" : "Dropbox"
+      setCloudSyncedFiles(prev => [name, ...prev])
+      addSyncLog(`Mirrored upload files [${name}] to backup repository node in ${target}.`)
+    })
+  }
+
+  const addSyncLog = (msg: string) => {
+    setSyncLogs(prev => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev.slice(0, 15)])
+  }
+
+  // 10. AI Summarizer side module
+  const runAISummary = () => {
+    if (!editorRef.current) return
+    const text = editorRef.current.innerText
+    
+    // Heuristics summary builder client side
+    const sentences = text.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 10)
+    const bulletTakeaways = sentences.slice(0, 3).map(s => s.length > 80 ? s.substring(0, 80) + "..." : s)
+    
+    setAiReport({
+      summary: text.substring(0, 240) + "...",
+      bullets: bulletTakeaways.length > 0 ? bulletTakeaways : ["Document contains short paragraphs", "No complex structures parsed."],
+      stats: `Word Count: ${wordCount} | Complexity Index: Medium | Ideal Reading Audience: Office Corporate Managers`
+    })
+    addSyncLog("Compiled offline AI Summarization report details.")
+  }
+
+  const sendAIChatMsg = () => {
+    if (!aiChatQuery.trim()) return
+    const userMsg = aiChatQuery
+    setAiChatLogs(prev => [...prev, { role: "user", text: userMsg }])
+    setAiChatQuery("")
+    
+    setTimeout(() => {
+      let reply = "I analyzed your document locally. "
+      if (userMsg.toLowerCase().includes("summar")) {
+        reply += `Here is a quick summary: The document titled "${documents.find(d => d.id === activeDocId)?.title || "Untitled"}" details local document frameworks with ${wordCount} words.`
+      } else if (userMsg.toLowerCase().includes("translate")) {
+        reply += "You can use the Translate panel in the PDF Actions sidebar to stamp a translation layer (Thai/Japanese) onto A4 pages."
+      } else {
+        reply += "I can identify heading blocks, extract signature coordinates, or format redaction layers locally with zero server requests."
+      }
+      setAiChatLogs(prev => [...prev, { role: "assistant", text: reply }])
+    }, 800)
+  }
+
+  // 11. Camera scanner emulator
+  const triggerCameraScan = () => {
+    setCameraActive(true)
+    setTimeout(() => {
+      const canvas = document.createElement("canvas")
+      canvas.width = 640
+      canvas.height = 480
+      const ctx = canvas.getContext("2d")
+      if (ctx) {
+        ctx.fillStyle = "#ffffff"
+        ctx.fillRect(0, 0, 640, 480)
+        ctx.strokeStyle = "#22d3ee"
+        ctx.lineWidth = 4
+        ctx.strokeRect(30, 30, 580, 420)
+        ctx.fillStyle = "#1e293b"
+        ctx.font = "bold 24px sans-serif"
+        ctx.fillText("GAUSS SCANNED DOCUMENT", 120, 160)
+        ctx.font = "14px monospace"
+        ctx.fillText(`Timestamp: ${new Date().toLocaleString()}`, 120, 200)
+        ctx.fillText("Camera scanner perspective corrected.", 120, 230)
+      }
+      const data = canvas.toDataURL("image/jpeg")
+      setCapturedScans(prev => [data, ...prev])
+      
+      // Convert to file
+      fetch(data)
+        .then(res => res.blob())
+        .then(blob => {
+          const file = new File([blob], `scan-${Date.now()}.jpg`, { type: "image/jpeg" })
+          setUploadedFiles(prev => [...prev, file])
+        })
+
+      setCameraActive(false)
+      addSyncLog("Captured scanner stream frame successfully.")
+    }, 1500)
+  }
+
+  // 12. Drag & Drop Upload
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setUploadedFiles(prev => [...prev, ...Array.from(e.target.files || [])])
+      setOutputs([])
+    }
   }
 
   return (
-    <main className="min-h-screen bg-black text-white pt-24 pb-16 relative">
+    <div className="min-h-screen bg-[#070807] text-white flex flex-col pt-16">
       
-      {/* Centered Single-Column Container */}
-      <div className="relative z-10 mx-auto w-full max-w-3xl px-6 flex flex-col gap-6">
+      {/* Dynamic Device Simulator chassis wrapper */}
+      <div className="flex-1 flex overflow-hidden">
         
-        {/* Back Link */}
-        <div className="animate-fade-in">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition duration-200"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Back to Tools</span>
-          </Link>
-        </div>
-
-        {/* Workspace Column */}
-        <div className="space-y-6 animate-fade-in">
-          {/* Header Info */}
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-white">
-              {toolText(tool.id, "name") || tool.name}
-            </h1>
-            <p className="mt-2 text-xs leading-relaxed text-zinc-400 max-w-2xl">
-              {toolText(tool.id, "description") || tool.description}
-            </p>
+        {/* ========================================== */}
+        {/* A. LEFT SIDEBAR PANEL (Extensions Suite)   */}
+        {/* ========================================== */}
+        <aside className="w-[300px] shrink-0 border-r border-zinc-900 bg-zinc-950 flex flex-col select-none">
+          {/* Tab Navigation header */}
+          <div className="grid grid-cols-5 border-b border-zinc-900 text-zinc-400 text-[10px] font-bold">
+            <button onClick={() => setLeftTab("docs")} className={`py-3 border-b-2 transition ${leftTab === "docs" ? "border-cyan-400 text-white bg-zinc-900/40" : "border-transparent hover:text-zinc-200"}`}>Files</button>
+            <button onClick={() => setLeftTab("workflows")} className={`py-3 border-b-2 transition ${leftTab === "workflows" ? "border-cyan-400 text-white bg-zinc-900/40" : "border-transparent hover:text-zinc-200"}`}>Flows</button>
+            <button onClick={() => setLeftTab("cloud")} className={`py-3 border-b-2 transition ${leftTab === "cloud" ? "border-cyan-400 text-white bg-zinc-900/40" : "border-transparent hover:text-zinc-200"}`}>Cloud</button>
+            <button onClick={() => setLeftTab("simulators")} className={`py-3 border-b-2 transition ${leftTab === "simulators" ? "border-cyan-400 text-white bg-zinc-900/40" : "border-transparent hover:text-zinc-200"}`}>Preview</button>
+            <button onClick={() => setLeftTab("api")} className={`py-3 border-b-2 transition ${leftTab === "api" ? "border-cyan-400 text-white bg-zinc-900/40" : "border-transparent hover:text-zinc-200"}`}>API</button>
           </div>
 
-          {/* Drag & Drop Upload Zone */}
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => inputRef.current?.click()}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault()
-                inputRef.current?.click()
-              }
-            }}
-            onDragOver={(event) => {
-              event.preventDefault()
-              setIsDragging(true)
-            }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={(event) => {
-              event.preventDefault()
-              setIsDragging(false)
-              addFiles(event.dataTransfer.files)
-            }}
-            className={cn(
-              "relative flex min-h-[160px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed p-6 text-center transition-all duration-250",
-              isDragging 
-                ? "border-zinc-500 bg-zinc-900/40" 
-                : "border-zinc-800 bg-zinc-950/20 hover:border-zinc-700 hover:bg-zinc-900/10"
-            )}
-          >
-            <input
-              ref={inputRef}
-              type="file"
-              multiple
-              accept={tool.acceptedFileTypes.join(",")}
-              onChange={(event) => {
-                if (event.target.files) addFiles(event.target.files)
-                event.target.value = ""
-              }}
-              className="hidden"
-            />
-            <div className={cn(
-              "grid h-12 w-12 place-items-center rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-500 transition-colors duration-250",
-              isDragging && "text-white"
-            )}>
-              <Upload className="h-4 w-4" />
-            </div>
-            <h3 className="mt-3 text-sm font-semibold text-zinc-300">
-              {t("workspace.dropTitle")}
-            </h3>
-            <p className="mt-1 text-[10px] text-zinc-500 font-mono">
-              {t("workspace.accepted")}: {acceptedLabel}
-            </p>
-          </div>
-
-          {notice && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="flex items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-xs text-amber-200"
-            >
-              <AlertCircle className="h-4 w-4 text-amber-400 shrink-0" />
-              <span>{notice}</span>
-            </motion.div>
-          )}
-
-          {/* Layout Panels: Visual PDF editor vs. File items */}
-          {toolId === "create-pdf" ? (
-            <div
-              onInput={() => {
-                if (!editorRef.current) return
-                const text = editorRef.current.innerText ?? ""
-                const words = text.trim() === "" ? 0 : text.trim().split(/\s+/).length
-                setWordCount(words)
-                setEstimatedPages(Math.max(1, Math.ceil(words / 250)))
-              }}
-            >
-              <WordEditor
-                editorRef={editorRef}
-                files={files}
-                wordCount={wordCount}
-                pageCount={estimatedPages}
-                onInsertImage={async (file) => {
-                  const base64 = await fileToBase64(file)
-                  editorRef.current?.focus()
-                  document.execCommand("insertImage", false, base64)
-                }}
-              />
-            </div>
-          ) : toolId.endsWith("-pdf") && files.length > 0 ? (
-            <div className="rounded-2xl border border-zinc-900 bg-zinc-950/20 p-5 space-y-4">
-              
-              {/* View Selector Tabs */}
-              <div className="flex flex-wrap justify-between items-center gap-3 pb-3 border-b border-zinc-900">
-                <div className="flex gap-2 rounded-xl bg-zinc-900/50 p-1 border border-zinc-800">
-                  <button
-                    type="button"
-                    onClick={() => setWorkspaceView("visual")}
-                    className={cn(
-                      "rounded-lg px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all duration-200",
-                      workspaceView === "visual"
-                        ? "bg-white text-zinc-950 shadow-sm"
-                        : "text-zinc-500 hover:text-zinc-300"
-                    )}
-                  >
-                    Visual Organizer
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setWorkspaceView("list")}
-                    className={cn(
-                      "rounded-lg px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all duration-200",
-                      workspaceView === "list"
-                        ? "bg-white text-zinc-950 shadow-sm"
-                        : "text-zinc-500 hover:text-zinc-300"
-                    )}
-                  >
-                    Source Files ({files.length})
+          <div className="flex-1 p-4 overflow-y-auto space-y-4">
+            
+            {/* Tab: Docs Explorer */}
+            {leftTab === "docs" && (
+              <div className="space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Document profiles</span>
+                  <button onClick={() => createNewDoc()} className="flex items-center gap-1 text-[11px] text-cyan-300 hover:text-white font-bold transition">
+                    <FolderPlus className="h-3.5 w-3.5" />
+                    <span>New Blank</span>
                   </button>
                 </div>
                 
-                <div className="flex gap-2">
-                  {workspaceView === "visual" && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setSandboxOpen(true)}
-                        className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
-                      >
-                        <LayoutGrid className="h-3 w-3" />
-                        <span>Layout Sandbox</span>
+                {/* List of documents */}
+                <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
+                  {documents.map(doc => (
+                    <div
+                      key={doc.id}
+                      onClick={() => setActiveDocId(doc.id)}
+                      className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs border transition cursor-pointer select-none ${
+                        activeDocId === doc.id 
+                          ? "bg-cyan-500/10 border-cyan-400/30 text-white" 
+                          : "border-transparent bg-zinc-900/40 text-zinc-400 hover:bg-zinc-900"
+                      }`}
+                    >
+                      <span className="truncate font-semibold">{doc.title}</span>
+                      <button onClick={(e) => deleteDoc(doc.id, e)} className="text-zinc-600 hover:text-red-400 transition p-1">
+                        <Trash className="h-3 w-3" />
                       </button>
-                      <button
-                        type="button"
-                        onClick={resetEditorLayout}
-                        className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-500 transition hover:bg-zinc-800 hover:text-zinc-300"
-                      >
-                        <RefreshCw className="h-3 w-3" />
-                        <span>Reset Pages</span>
-                      </button>
-                    </>
-                  )}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t border-zinc-900 pt-3 space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block mb-1">Create from template</span>
+                  <div className="grid grid-cols-2 gap-2 text-[10px]">
+                    <button onClick={() => createNewDoc("template-resume")} className="px-2 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 transition font-semibold text-zinc-300">Resume Doc</button>
+                    <button onClick={() => createNewDoc("template-proposal")} className="px-2 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 transition font-semibold text-zinc-300">Proposal</button>
+                    <button onClick={() => createNewDoc("template-contract")} className="px-2 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 transition font-semibold text-zinc-300">NDA Contract</button>
+                  </div>
                 </div>
               </div>
+            )}
 
-              {/* 1. VISUAL PAGE ORGANIZER VIEW */}
-              {workspaceView === "visual" && (
-                <div className="space-y-4">
-                  {editorPages.length === 0 ? (
-                    <p className="py-12 text-center text-xs text-zinc-500">
-                      No pages to preview. Check source documents.
-                    </p>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 max-h-[400px] overflow-y-auto pr-1">
-                      {editorPages.map((page, index) => (
-                        <div 
-                          key={page.id} 
-                          className="group/card relative rounded-xl border border-zinc-900 bg-zinc-950/40 p-3 flex flex-col items-center justify-between text-center transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900/10"
+            {/* Tab: Custom Workflows Chain Builder */}
+            {leftTab === "workflows" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Workflow Stack Chain</span>
+                  <button onClick={() => setWorkflowStack([])} className="text-[10px] text-zinc-500 hover:text-white transition">Clear</button>
+                </div>
+                
+                {/* Drag and drop stacked cards */}
+                <div className="space-y-2">
+                  {workflowStack.map((toolId, i) => {
+                    const t = toolRegistry.find(x => x.id === toolId)
+                    if (!t) return null
+                    return (
+                      <div key={i} className="flex items-center justify-between border border-zinc-800 bg-zinc-900/40 rounded-xl p-2.5 text-xs">
+                        <span className="font-semibold text-zinc-300">{i + 1}. {t.name}</span>
+                        <button
+                          onClick={() => setWorkflowStack(prev => prev.filter((_, idx) => idx !== i))}
+                          className="text-zinc-600 hover:text-red-400 p-0.5 transition"
                         >
-                          {/* Visual Rotation Canvas */}
-                          <div className="relative w-16 h-22 my-4 bg-zinc-950 border border-zinc-900 rounded-lg flex items-center justify-center overflow-hidden transition-all duration-250 group-hover/card:border-zinc-700">
-                            <div 
-                              className="w-10 h-14 flex items-center justify-center text-zinc-500 transition-transform duration-200"
-                              style={{ transform: `rotate(${page.rotation}deg)` }}
-                            >
-                              <FileText className="h-7 w-7 text-zinc-500" />
-                            </div>
-                            <span className="absolute bottom-1 right-1.5 font-mono text-[9px] text-zinc-600">
-                              P.{page.pageIndex + 1}
-                            </span>
-                          </div>
-
-                          {/* Label */}
-                          <div className="w-full text-center px-1">
-                            <span className="text-[10px] font-bold tracking-wide text-zinc-300 bg-zinc-900 border border-zinc-800 px-2.5 py-0.5 rounded-full inline-block">
-                              Page {index + 1}
-                            </span>
-                            <p className="mt-1.5 truncate text-[9px] text-zinc-500" title={page.originalFileName}>
-                              {page.originalFileName}
-                            </p>
-                          </div>
-
-                          {/* visual organizer button bar */}
-                          <div className="mt-3 flex items-center justify-center gap-1 border-t border-zinc-900 pt-2 w-full">
-                            <button
-                              type="button"
-                              onClick={() => movePage(index, -1)}
-                              disabled={index === 0}
-                              className="p-1 rounded bg-zinc-900 text-zinc-500 hover:bg-zinc-850 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed"
-                              title="Move Left"
-                            >
-                              <ArrowLeft className="h-3.5 w-3.5" />
-                            </button>
-                            
-                            <button
-                              type="button"
-                              onClick={() => rotatePage(index)}
-                              className="p-1 rounded bg-zinc-900 text-zinc-400 hover:bg-zinc-850 hover:text-white"
-                              title="Rotate 90°"
-                            >
-                              <RotateCw className="h-3.5 w-3.5" />
-                            </button>
-                            
-                            <button
-                              type="button"
-                              onClick={() => deletePage(index)}
-                              className="p-1 rounded bg-zinc-900 text-zinc-500 hover:bg-red-500/10 hover:text-red-400"
-                              title="Delete Page"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => movePage(index, 1)}
-                              disabled={index === editorPages.length - 1}
-                              className="p-1 rounded bg-zinc-900 text-zinc-500 hover:bg-zinc-850 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed"
-                              title="Move Right"
-                            >
-                              <ArrowRight className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )
+                  })}
+                  
+                  {workflowStack.length === 0 && (
+                    <p className="text-[11px] text-zinc-600 text-center py-6">Chain stack is empty. Click presets below to load pipeline.</p>
                   )}
                 </div>
-              )}
 
-              {/* 2. FILE ITEMS VIEW */}
-              {workspaceView === "list" && (
-                <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                  {files.map((file, index) => (
-                    <div key={`${file.name}-${file.size}-${file.lastModified}`} className="flex items-center justify-between gap-4 rounded-xl border border-zinc-900 bg-zinc-950/40 px-4 py-3">
-                      <div className="min-w-0 flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-zinc-900 flex items-center justify-center text-zinc-500">
-                          <FileText className="h-4 w-4" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-xs font-semibold text-zinc-300">{file.name}</p>
-                          <p className="mt-0.5 text-[10px] text-zinc-500 font-mono">{bytesToSize(file.size)}</p>
-                        </div>
-                      </div>
+                {/* Preset actions add */}
+                <div className="border-t border-zinc-900 pt-3 space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block">Quick Preset Nodes</span>
+                  <div className="flex gap-2 flex-wrap text-[9px] font-bold uppercase">
+                    <button onClick={() => setWorkflowStack(["ocr-pdf", "watermark-pdf", "protect-pdf"])} className="px-2 py-1 rounded bg-zinc-900 hover:bg-zinc-850 text-cyan-300 transition">Legal Audit Flow</button>
+                    <button onClick={() => setWorkflowStack(["merge-pdf", "compress-pdf"])} className="px-2 py-1 rounded bg-zinc-900 hover:bg-zinc-850 text-cyan-300 transition">Merge & Compress</button>
+                  </div>
+                </div>
+
+                {/* Execution panel workflow */}
+                <div className="bg-zinc-900/30 border border-zinc-850 rounded-xl p-3 space-y-3">
+                  <button
+                    onClick={runChainedWorkflow}
+                    disabled={workflowRunning}
+                    className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-cyan-400 text-zinc-950 font-black text-xs uppercase transition tracking-wider disabled:opacity-50"
+                  >
+                    {workflowRunning ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5 fill-current" />}
+                    <span>Execute Workflow Chain</span>
+                  </button>
+
+                  <div className="space-y-1.5 text-[9px] font-mono text-zinc-500 max-h-[140px] overflow-y-auto pr-1">
+                    {workflowLog.map((log, idx) => (
+                      <div key={idx} className="truncate">{log}</div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* Tab: Cloud Synced backup dashboard */}
+            {leftTab === "cloud" && (
+              <div className="space-y-4">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block">Cloud Integrations</span>
+                
+                {/* Connector buttons */}
+                <div className="space-y-2">
+                  <button
+                    onClick={() => { setGdriveConnected(!gdriveConnected); addSyncLog(gdriveConnected ? "Disconnected Google Drive." : "Connected Google Drive repository.") }}
+                    className={`w-full flex items-center justify-between px-3 py-2 border rounded-xl transition text-xs font-semibold ${
+                      gdriveConnected ? "bg-cyan-500/10 border-cyan-400/40 text-cyan-300" : "border-zinc-800 hover:border-zinc-700 text-zinc-400"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Cloud className="h-4 w-4" />
+                      <span>Google Drive Cloud Sync</span>
+                    </span>
+                    <span className="text-[9px] font-bold">{gdriveConnected ? "SYNCED" : "OFFLINE"}</span>
+                  </button>
+
+                  <button
+                    onClick={() => { setDropboxConnected(!dropboxConnected); addSyncLog(dropboxConnected ? "Disconnected Dropbox." : "Connected Dropbox repository.") }}
+                    className={`w-full flex items-center justify-between px-3 py-2 border rounded-xl transition text-xs font-semibold ${
+                      dropboxConnected ? "bg-cyan-500/10 border-cyan-400/40 text-cyan-300" : "border-zinc-800 hover:border-zinc-700 text-zinc-400"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Cloud className="h-4 w-4" />
+                      <span>Dropbox Repository Mirror</span>
+                    </span>
+                    <span className="text-[9px] font-bold">{dropboxConnected ? "SYNCED" : "OFFLINE"}</span>
+                  </button>
+                </div>
+
+                {/* Synced files logs */}
+                <div className="border-t border-zinc-900 pt-3 space-y-2 font-mono text-[9px] text-zinc-500">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block">Cloud Mirror Log</span>
+                  <div className="space-y-1.5 max-h-[160px] overflow-y-auto">
+                    {syncLogs.map((log, idx) => <div key={idx}>{log}</div>)}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tab: Simulators native chassis preview */}
+            {leftTab === "simulators" && (
+              <div className="space-y-4">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block">Device Chassis Wrapper</span>
+                
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  {[
+                    { id: "none", label: "No Wrapper", icon: Minimize },
+                    { id: "macos", label: "macOS Window", icon: Monitor },
+                    { id: "windows", label: "Windows OS", icon: Monitor },
+                    { id: "iphone", label: "iOS iPhone", icon: Smartphone },
+                    { id: "android", label: "Android Mobile", icon: Smartphone }
+                  ].map(dev => {
+                    const Icon = dev.icon
+                    return (
                       <button
-                        type="button"
-                        onClick={() => removeFile(index)}
-                        className="rounded-lg p-1.5 text-zinc-500 hover:bg-red-500/10 hover:text-red-400 transition"
+                        key={dev.id}
+                        onClick={() => { setDeviceWrapper(dev.id as any); addSyncLog(`Switched chassis layout view to: ${dev.label}`) }}
+                        className={`flex items-center gap-2 px-3 py-2 border rounded-xl text-left transition font-semibold ${
+                          deviceWrapper === dev.id 
+                            ? "bg-cyan-500/10 border-cyan-400/40 text-cyan-300" 
+                            : "border-zinc-800 bg-zinc-900/20 text-zinc-400 hover:border-zinc-700 hover:text-white"
+                        }`}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Icon className="h-4 w-4 shrink-0 text-cyan-400" />
+                        <span>{dev.label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Tab: API Playground for devs */}
+            {leftTab === "api" && (
+              <div className="space-y-4">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block">Developer API Endpoint Console</span>
+                
+                <div className="space-y-3 font-mono text-[9px] text-zinc-400">
+                  <div className="bg-zinc-900/50 p-2.5 rounded-lg border border-zinc-800 space-y-1">
+                    <div className="text-cyan-400 font-bold uppercase tracking-widest">POST /api/v1/pdf/ocr</div>
+                    <pre className="text-zinc-500 text-[8px] whitespace-pre-wrap">{`{
+  "file": "base64_encoded_stream",
+  "language": "eng+tha",
+  "deskew": true
+}`}</pre>
+                  </div>
+
+                  <div className="bg-zinc-900/50 p-2.5 rounded-lg border border-zinc-800 space-y-1">
+                    <div className="text-cyan-400 font-bold uppercase tracking-widest">POST /api/v1/pdf/encrypt</div>
+                    <pre className="text-zinc-500 text-[8px] whitespace-pre-wrap">{`{
+  "file": "base64_encoded_stream",
+  "password": "user_key_secret"
+}`}</pre>
+                  </div>
+
+                  <div className="border border-zinc-800 bg-zinc-900/30 rounded-xl p-3 text-center text-zinc-500 text-[9px]">
+                    🔐 Secure client-side tokens are cached locally in your browser workspace.
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </div>
+        </aside>
+
+        {/* ========================================== */}
+        {/* B. CENTRAL MAIN DOCS EDITOR                */}
+        {/* ========================================== */}
+        <main className="flex-1 flex flex-col bg-zinc-900/20 p-6 overflow-y-auto items-center justify-start">
+          
+          {/* Apply structural Device Simulator wrappers around WordEditor */}
+          {deviceWrapper === "macos" && (
+            <div className="w-full max-w-4xl border border-zinc-800 rounded-2xl bg-zinc-950 overflow-hidden shadow-2xl flex flex-col">
+              <div className="bg-zinc-900 px-4 py-2 flex items-center gap-1.5 border-b border-zinc-800/60">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+                <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
+                <span className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
+                <span className="text-[10px] text-zinc-500 ml-4 font-bold font-mono">gauss-studio.app</span>
+              </div>
+              <WordEditor 
+                editorRef={editorRef} 
+                files={uploadedFiles} 
+                onInsertImage={(f) => setUploadedFiles(prev => [...prev, f])}
+                wordCount={wordCount}
+                pageCount={pageCount}
+                watermarkText={watermarkText}
+                setWatermarkText={setWatermarkText}
+                showPageNumbers={showPageNumbers}
+                setShowPageNumbers={setShowPageNumbers}
+                margins={margins}
+                setMargins={setMargins}
+                orientation={orientation}
+                setOrientation={setOrientation}
+                pageSize={pageSize}
+                setPageSize={setPageSize}
+              />
+            </div>
+          )}
+
+          {deviceWrapper === "windows" && (
+            <div className="w-full max-w-4xl border border-zinc-800 bg-zinc-950 overflow-hidden shadow-2xl flex flex-col">
+              <div className="bg-[#1e1e1e] px-4 py-2.5 flex items-center justify-between border-b border-zinc-850">
+                <span className="text-[10px] font-bold text-zinc-400 font-sans">Gauss local-first sandbox v2</span>
+                <div className="flex gap-2">
+                  <span className="w-3 h-0.5 bg-zinc-500 self-center" />
+                  <span className="w-2.5 h-2.5 border border-zinc-500 block" />
+                  <span className="text-zinc-500 text-xs">×</span>
+                </div>
+              </div>
+              <WordEditor 
+                editorRef={editorRef} 
+                files={uploadedFiles} 
+                onInsertImage={(f) => setUploadedFiles(prev => [...prev, f])}
+                wordCount={wordCount}
+                pageCount={pageCount}
+                watermarkText={watermarkText}
+                setWatermarkText={setWatermarkText}
+                showPageNumbers={showPageNumbers}
+                setShowPageNumbers={setShowPageNumbers}
+                margins={margins}
+                setMargins={setMargins}
+                orientation={orientation}
+                setOrientation={setOrientation}
+                pageSize={pageSize}
+                setPageSize={setPageSize}
+              />
+            </div>
+          )}
+
+          {deviceWrapper === "iphone" && (
+            <div className="w-[380px] border-[12px] border-zinc-800 rounded-[48px] bg-zinc-950 overflow-hidden shadow-2xl flex flex-col h-[750px] relative">
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-full z-50 flex items-center justify-center">
+                <span className="w-3 h-3 rounded-full bg-zinc-900 border border-zinc-800" />
+              </div>
+              <div className="flex-1 overflow-y-auto pt-8">
+                <WordEditor 
+                  editorRef={editorRef} 
+                  files={uploadedFiles} 
+                  onInsertImage={(f) => setUploadedFiles(prev => [...prev, f])}
+                  wordCount={wordCount}
+                  pageCount={pageCount}
+                  watermarkText={watermarkText}
+                  setWatermarkText={setWatermarkText}
+                  showPageNumbers={showPageNumbers}
+                  setShowPageNumbers={setShowPageNumbers}
+                  margins="narrow"
+                  setMargins={setMargins}
+                  orientation="Portrait"
+                  setOrientation={setOrientation}
+                  pageSize="A4"
+                  setPageSize={setPageSize}
+                />
+              </div>
+            </div>
+          )}
+
+          {deviceWrapper === "android" && (
+            <div className="w-[370px] border-[8px] border-zinc-850 rounded-[32px] bg-zinc-950 overflow-hidden shadow-2xl flex flex-col h-[720px] relative">
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 w-4 h-4 bg-zinc-900 rounded-full z-50" />
+              <div className="flex-1 overflow-y-auto pt-6">
+                <WordEditor 
+                  editorRef={editorRef} 
+                  files={uploadedFiles} 
+                  onInsertImage={(f) => setUploadedFiles(prev => [...prev, f])}
+                  wordCount={wordCount}
+                  pageCount={pageCount}
+                  watermarkText={watermarkText}
+                  setWatermarkText={setWatermarkText}
+                  showPageNumbers={showPageNumbers}
+                  setShowPageNumbers={setShowPageNumbers}
+                  margins="narrow"
+                  setMargins={setMargins}
+                  orientation="Portrait"
+                  setOrientation={setOrientation}
+                  pageSize="A4"
+                  setPageSize={setPageSize}
+                />
+              </div>
+            </div>
+          )}
+
+          {deviceWrapper === "none" && (
+            <div className="w-full max-w-4xl">
+              <WordEditor 
+                editorRef={editorRef} 
+                files={uploadedFiles} 
+                onInsertImage={(f) => setUploadedFiles(prev => [...prev, f])}
+                wordCount={wordCount}
+                pageCount={pageCount}
+                watermarkText={watermarkText}
+                setWatermarkText={setWatermarkText}
+                showPageNumbers={showPageNumbers}
+                setShowPageNumbers={setShowPageNumbers}
+                margins={margins}
+                setMargins={setMargins}
+                orientation={orientation}
+                setOrientation={setOrientation}
+                pageSize={pageSize}
+                setPageSize={setPageSize}
+              />
+            </div>
+          )}
+
+        </main>
+
+        {/* ========================================== */}
+        {/* C. RIGHT SIDEBAR PANEL (PDF Tool Wizard)  */}
+        {/* ========================================== */}
+        <aside className="w-[320px] shrink-0 border-l border-zinc-900 bg-zinc-950 flex flex-col select-none">
+          <div className="p-4 border-b border-zinc-900">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block mb-2">PDF Action Wizard</span>
+            
+            <select
+              value={activeToolId}
+              onChange={(e) => {
+                setActiveToolId(e.target.value)
+                setOutputs([])
+                setProcessLog("")
+              }}
+              className="w-full h-8 border border-zinc-800 bg-zinc-900 text-xs text-white rounded-lg px-2.5 outline-none focus:border-cyan-500 cursor-pointer"
+            >
+              {toolRegistry.map(t => (
+                <option key={t.id} value={t.id}>{t.name} ({t.category})</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex-1 p-4 overflow-y-auto space-y-4 text-xs">
+            
+            {/* Tool Description panel */}
+            <div className="bg-zinc-900/30 border border-zinc-900 p-3 rounded-xl space-y-1">
+              <h4 className="font-bold text-cyan-300">{activeTool.name}</h4>
+              <p className="text-zinc-500 leading-relaxed text-[11px]">{activeTool.description}</p>
+            </div>
+
+            {/* Uploaded Base Files Area */}
+            <div className="space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Inputs / Uploads</span>
+              
+              <div className="border border-dashed border-zinc-800 hover:border-zinc-700 bg-zinc-900/20 rounded-xl p-3.5 text-center cursor-pointer relative transition">
+                <input
+                  type="file"
+                  multiple
+                  onChange={handleFileUpload}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                />
+                <Download className="h-5 w-5 text-zinc-500 mx-auto mb-1.5" />
+                <span className="text-[10px] text-zinc-400 block font-semibold">Drop PDF/image files here</span>
+                <span className="text-[9px] text-zinc-650 block mt-0.5">Click to browse locally</span>
+              </div>
+
+              {/* Uploaded files array checklist */}
+              {uploadedFiles.length > 0 && (
+                <div className="space-y-1 max-h-[140px] overflow-y-auto pr-1">
+                  {uploadedFiles.map((file, i) => (
+                    <div key={i} className="flex items-center justify-between bg-zinc-900/40 border border-zinc-850 p-2 rounded-lg text-[10px]">
+                      <span className="truncate max-w-[200px] text-zinc-300 font-mono font-medium">{file.name}</span>
+                      <button 
+                        onClick={() => setUploadedFiles(prev => prev.filter((_, idx) => idx !== i))}
+                        className="text-zinc-600 hover:text-red-400 transition"
+                      >
+                        <Trash className="h-3 w-3" />
                       </button>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-          ) : (
-            /* Regular select files list layout (non-PDF or no files uploaded) */
-            <div className="rounded-2xl border border-zinc-900 bg-zinc-950/20 p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-zinc-900">
-                <div className="flex items-center gap-2">
-                  <FolderOpen className="h-4 w-4 text-zinc-500" />
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400">{t("workspace.selected")}</h2>
-                  {files.length > 0 && (
-                    <span className="rounded-full bg-zinc-900 px-2 py-0.5 text-[10px] font-bold text-zinc-300">{files.length}</span>
-                  )}
-                </div>
-                
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFiles([])
-                    setOutputs([])
-                    setSummary("")
-                  }}
-                  disabled={files.length === 0}
-                  className="rounded-lg border border-zinc-800 px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-500 transition hover:border-zinc-700 hover:text-zinc-300 disabled:cursor-not-allowed disabled:opacity-30"
-                >
-                  {t("workspace.clear")}
-                </button>
-              </div>
 
-              <div className="mt-3 space-y-2 max-h-[260px] overflow-y-auto">
-                <AnimatePresence initial={false}>
-                  {files.length === 0 ? (
-                    <p className="py-8 text-center text-xs text-zinc-500">
-                      {t("workspace.noFiles")}
-                    </p>
-                  ) : (
-                    files.map((file, index) => (
-                      <motion.div
-                        key={`${file.name}-${file.size}-${file.lastModified}`}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 10 }}
-                        className="flex items-center justify-between gap-4 rounded-xl border border-zinc-900 bg-zinc-950/40 px-4 py-2.5 hover:bg-zinc-900/20 transition duration-200"
+            {/* Dynamic tool-specific wizard inputs */}
+            {activeTool.settingsSchema.length > 0 && (
+              <div className="space-y-3.5 border-t border-zinc-900 pt-3.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block">Configurations</span>
+                {activeTool.settingsSchema.map(setting => (
+                  <div key={setting.name} className="space-y-1.5">
+                    <label className="text-zinc-400 text-[11px] block">{setting.label}</label>
+                    {setting.type === "password" ? (
+                      <input
+                        type="password"
+                        value={String(toolSettings[setting.name] ?? setting.defaultValue)}
+                        onChange={(e) => setToolSettings(prev => ({ ...prev, [setting.name]: e.target.value }))}
+                        className="w-full h-8 bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 outline-none focus:border-cyan-500 font-mono text-xs text-white"
+                      />
+                    ) : setting.type === "select" ? (
+                      <select
+                        value={String(toolSettings[setting.name] ?? setting.defaultValue)}
+                        onChange={(e) => setToolSettings(prev => ({ ...prev, [setting.name]: e.target.value }))}
+                        className="w-full h-8 bg-zinc-900 border border-zinc-800 rounded-lg px-2 outline-none focus:border-cyan-500 cursor-pointer text-xs text-zinc-300"
                       >
-                        <div className="min-w-0 flex items-center gap-3">
-                          <div className="h-7 w-7 rounded-lg bg-zinc-900 flex items-center justify-center text-zinc-500 shrink-0">
-                            <FileText className="h-4 w-4" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="truncate text-xs font-semibold text-zinc-300">{file.name}</p>
-                            <p className="mt-0.5 text-[10px] text-zinc-500 font-mono">{bytesToSize(file.size)}</p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeFile(index)}
-                          className="rounded-lg p-1.5 text-zinc-500 hover:bg-red-500/10 hover:text-red-400 transition"
-                          aria-label="Remove file"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </motion.div>
-                    ))
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-          )}
-
-          {/* Settings Panel & Outputs (Merged inline below) */}
-          <div className="rounded-2xl border border-zinc-900 bg-zinc-950/20 p-5">
-            <div className="flex items-center gap-2 pb-4 border-b border-zinc-900">
-              <Settings className="h-3.5 w-3.5 text-zinc-500" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400">{t("workspace.settings")}</h2>
-            </div>
-            
-            {/* Setting items */}
-            <div className="mt-4 space-y-4">
-              {tool.settingsSchema.map((setting) => (
-                <SettingControl
-                  key={setting.name}
-                  toolId={tool.id}
-                  setting={setting}
-                  value={settings[setting.name]}
-                  onChange={(value) => {
-                    setSettings((currentSettings) => ({ ...currentSettings, [setting.name]: value }))
-                    setOutputs([])
-                    setSummary("")
-                  }}
-                />
-              ))}
-            </div>
-
-            {/* Run Button */}
-            <button
-              type="button"
-              onClick={processFiles}
-              disabled={isProcessing || files.length === 0}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-white px-5 py-3.5 text-xs font-bold uppercase tracking-[0.15em] text-black transition duration-200 hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {isProcessing ? (
-                <>
-                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-black border-t-transparent" />
-                  <span>{t("workspace.processing")}</span>
-                </>
-              ) : (
-                <span>{t("workspace.process")}</span>
-              )}
-            </button>
-          </div>
-
-          {/* Outputs Area */}
-          <div className="rounded-2xl border border-zinc-900 bg-zinc-950/40 p-5">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 pb-3 border-b border-zinc-900">
-              {t("workspace.outputs")}
-            </h3>
-            
-            {summary ? (
-              <p className="mt-3 text-xs leading-relaxed text-zinc-300 bg-zinc-900/50 border border-zinc-800 rounded-xl px-3 py-2">
-                {summary}
-              </p>
-            ) : (
-              <p className="mt-3 text-center py-6 text-xs text-zinc-500">
-                {t("workspace.outputHint")}
-              </p>
-            )}
-
-            {outputs.length > 0 && (
-              <div className="mt-4 space-y-2">
-                {outputs.map((output) => (
-                  <div key={output.id} className="rounded-xl border border-zinc-900 bg-zinc-950/40 p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-xs font-bold text-zinc-200">{output.name}</p>
-                      <p className="mt-0.5 text-[10px] text-zinc-500 font-mono">{bytesToSize(output.size)}</p>
-                      {output.message && (
-                        <p className="mt-1 text-[10px] leading-relaxed text-zinc-500">{output.message}</p>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => downloadBlob(output.blob, output.name)}
-                      className="flex items-center justify-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
-                    >
-                      <Download className="h-3.5 w-3.5" />
-                      <span>{t("workspace.download")}</span>
-                    </button>
+                        {setting.options?.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    ) : setting.type === "slider" ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="range"
+                          min={setting.min}
+                          max={setting.max}
+                          value={Number(toolSettings[setting.name] ?? setting.defaultValue)}
+                          onChange={(e) => setToolSettings(prev => ({ ...prev, [setting.name]: Number(e.target.value) }))}
+                          className="flex-1 accent-cyan-400 h-1 rounded-lg bg-zinc-800"
+                        />
+                        <span className="font-mono text-zinc-400 w-8 text-right font-bold text-[10px]">
+                          {String(toolSettings[setting.name] ?? setting.defaultValue)}
+                        </span>
+                      </div>
+                    ) : (
+                      <input
+                        type="text"
+                        value={String(toolSettings[setting.name] ?? setting.defaultValue)}
+                        onChange={(e) => setToolSettings(prev => ({ ...prev, [setting.name]: e.target.value }))}
+                        className="w-full h-8 bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 outline-none focus:border-cyan-500 text-xs text-white"
+                      />
+                    )}
                   </div>
                 ))}
-
-                {outputs.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={downloadAll}
-                    className="w-full mt-2 rounded-xl bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.12em] text-zinc-950 transition hover:bg-zinc-200 shadow-md"
-                  >
-                    {t("workspace.downloadAll")}
-                  </button>
-                )}
               </div>
             )}
+
+            {/* Special Action: Electronic Signatures Pad Button */}
+            {activeToolId === "sign-pdf" && (
+              <div className="border-t border-zinc-900 pt-3 space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block">Sign Stamp Designer</span>
+                <button
+                  onClick={() => setSigModalOpen(true)}
+                  className="w-full flex items-center justify-center gap-1.5 py-2 border border-dashed border-cyan-500/20 bg-cyan-500/5 hover:bg-cyan-500/10 text-cyan-300 text-xs font-bold uppercase tracking-wider rounded-xl transition"
+                >
+                  <PenTool className="h-4 w-4" />
+                  <span>Open Draw Signature Pad</span>
+                </button>
+              </div>
+            )}
+
+            {/* Special Action: Scan to PDF Emulator Frame */}
+            {activeToolId === "scan-to-pdf" && (
+              <div className="border-t border-zinc-900 pt-3 space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block">Camera scanner</span>
+                <button
+                  onClick={triggerCameraScan}
+                  className="w-full flex items-center justify-center gap-1.5 py-2 border border-dashed border-cyan-500/20 bg-cyan-500/5 hover:bg-cyan-500/10 text-cyan-300 text-xs font-bold uppercase tracking-wider rounded-xl transition"
+                >
+                  <Camera className="h-4 w-4" />
+                  <span>Simulate Scanner Capture</span>
+                </button>
+              </div>
+            )}
+
+            {/* Special Action: AI Summary and Translate Panel triggers */}
+            {activeToolId === "ai-summarizer" && (
+              <div className="border-t border-zinc-900 pt-3 space-y-3">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block">AI Summary Module</span>
+                
+                <button
+                  onClick={runAISummary}
+                  className="w-full py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-850 text-cyan-300 font-bold tracking-wider uppercase text-[10px] transition"
+                >
+                  Analyze Content Structure
+                </button>
+
+                {aiReport && (
+                  <div className="bg-zinc-900/60 border border-zinc-800 p-3 rounded-xl space-y-2 text-[10px]">
+                    <div className="font-bold text-zinc-300">Executive Summary:</div>
+                    <p className="text-zinc-500 italic">{aiReport.summary}</p>
+                    
+                    <div className="font-bold text-zinc-300 mt-2">Core Points:</div>
+                    <ul className="list-disc pl-4 text-zinc-500 space-y-0.5">
+                      {aiReport.bullets.map((b, i) => <li key={i}>{b}</li>)}
+                    </ul>
+                    <div className="text-zinc-600 border-t border-zinc-900 pt-1.5 mt-1 font-mono text-[8px]">{aiReport.stats}</div>
+                  </div>
+                )}
+
+                {/* AI Assistant chat helper */}
+                <div className="border-t border-zinc-900 pt-3 space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block">Ask Gauss AI</span>
+                  <div className="bg-zinc-900/20 border border-zinc-900 rounded-xl p-2.5 space-y-2 h-[120px] overflow-y-auto">
+                    {aiChatLogs.map((log, idx) => (
+                      <div key={idx} className={`leading-normal ${log.role === 'user' ? 'text-cyan-300 text-right font-bold' : 'text-zinc-500'}`}>
+                        {log.role === 'user' ? '👤 ' : '🤖 '}{log.text}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      placeholder="Summarize paragraph..."
+                      value={aiChatQuery}
+                      onChange={(e) => setAiChatQuery(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") sendAIChatMsg() }}
+                      className="flex-1 h-7 bg-zinc-900 border border-zinc-800 rounded px-2 outline-none focus:border-cyan-500 text-xs text-white"
+                    />
+                    <button onClick={sendAIChatMsg} className="px-2.5 h-7 rounded bg-cyan-400 text-zinc-950 font-bold uppercase text-[10px] transition hover:bg-white">Send</button>
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* Execute trigger section */}
+            <div className="border-t border-zinc-900 pt-4 space-y-3.5">
+              <button
+                onClick={handleExecuteAction}
+                disabled={processing}
+                className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-cyan-400 text-zinc-950 font-black text-xs uppercase tracking-wider transition hover:bg-white disabled:opacity-50"
+              >
+                {processing ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4 fill-current" />}
+                <span>Execute {activeTool.name}</span>
+              </button>
+
+              {processLog && (
+                <div className="font-mono text-[9px] text-zinc-500 whitespace-pre-wrap leading-normal border border-zinc-900 p-2.5 rounded-lg bg-zinc-900/10">
+                  {processLog}
+                </div>
+              )}
+            </div>
+
+            {/* Download Compiled Output Items */}
+            {outputs.length > 0 && (
+              <div className="border-t border-zinc-900 pt-3.5 space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block">Download Files</span>
+                
+                <div className="space-y-1.5">
+                  {outputs.map((out) => (
+                    <button
+                      key={out.id}
+                      onClick={() => {
+                        const url = URL.createObjectURL(out.blob)
+                        const a = document.createElement("a")
+                        a.href = url
+                        a.download = out.name
+                        a.click()
+                        URL.revokeObjectURL(url)
+                      }}
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 font-bold text-xs uppercase tracking-wider transition hover:bg-cyan-500/25"
+                    >
+                      <span className="truncate max-w-[180px] font-mono lowercase">{out.name}</span>
+                      <Download className="h-3.5 w-3.5" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
           </div>
-        </div>
+        </aside>
 
       </div>
 
-      {/* Specification 5: Interactive coordinate sandbox layout preview modal */}
-      <LayoutSandbox
-        isOpen={sandboxOpen}
-        onClose={() => setSandboxOpen(false)}
-        onSave={(config) => {
-          setSandboxConfig(config)
-          setOutputs([])
-          setSummary("")
-        }}
-        initialConfig={sandboxConfig}
-        pageCount={editorPages.length}
-      />
-    </main>
+      {/* ========================================== */}
+      {/* D. SIGNATURE PAD DRAWING MODAL OVERLAY     */}
+      {/* ========================================== */}
+      {sigModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="w-[450px] border border-zinc-800 bg-zinc-950 rounded-2xl shadow-2xl flex flex-col overflow-hidden select-none">
+            
+            <div className="px-5 py-3 border-b border-zinc-900 flex justify-between items-center bg-zinc-900/30">
+              <span className="text-xs font-black uppercase tracking-wider text-cyan-300">Sign Stamp Pad</span>
+              <span className="text-[9px] text-zinc-500 uppercase tracking-widest">Draw signature locally</span>
+            </div>
+
+            <div className="p-6 bg-zinc-950 flex flex-col items-center justify-center gap-4">
+              <canvas
+                ref={sigCanvasRef}
+                width={360}
+                height={160}
+                onMouseDown={startDrawing}
+                onMouseMove={draw}
+                onMouseUp={stopDrawing}
+                onMouseLeave={stopDrawing}
+                className="bg-black border border-zinc-850 rounded-xl cursor-crosshair"
+              />
+              <span className="text-[10px] text-zinc-600">Place mouse/stylus brush to draw inside the grid area.</span>
+            </div>
+
+            <div className="px-5 py-3.5 border-t border-zinc-900 bg-zinc-900/30 flex justify-end gap-2.5">
+              <button
+                onClick={() => setSigModalOpen(false)}
+                className="px-4 py-2 border border-zinc-800 hover:border-zinc-700 rounded-xl text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-white transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={clearSignature}
+                className="px-4 py-2 border border-red-900/30 bg-red-950/15 hover:bg-red-900/20 text-red-400 rounded-xl text-xs font-bold uppercase tracking-wider transition"
+              >
+                Clear
+              </button>
+              <button
+                onClick={saveSignature}
+                className="px-4 py-2 bg-cyan-400 text-zinc-950 hover:bg-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md shadow-cyan-400/10 transition"
+              >
+                Insert Signature
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+    </div>
   )
 }

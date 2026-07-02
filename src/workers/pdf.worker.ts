@@ -4,7 +4,7 @@ self.addEventListener("message", async (event) => {
   const { files, toolId, editorPages, settings, config } = event.data
   
   try {
-    if (toolId === "create-pdf") {
+    if (toolId === "create-pdf" || toolId === "word-to-pdf") {
       const pdf = await PDFDocument.create()
       const font = await pdf.embedFont(StandardFonts.Helvetica)
       const italicFont = await pdf.embedFont(StandardFonts.HelveticaOblique)
@@ -30,7 +30,7 @@ self.addEventListener("message", async (event) => {
       }
       
       let page = pdf.addPage([width, height])
-      let cursorY = height - 50
+      let cursorY = height - 60
       const marginX = 50
       
       const blocks = settings.sections ? JSON.parse(settings.sections) : []
@@ -38,7 +38,7 @@ self.addEventListener("message", async (event) => {
       for (const block of blocks) {
         if (block.type === "pagebreak") {
           page = pdf.addPage([width, height])
-          cursorY = height - 50
+          cursorY = height - 60
           continue
         }
         
@@ -79,12 +79,38 @@ self.addEventListener("message", async (event) => {
               cursorY -= (finalH + 15)
               if (cursorY < 50) {
                 page = pdf.addPage([width, height])
-                cursorY = height - 50 - finalH
+                cursorY = height - 60 - finalH
               }
               page.drawImage(embeddedImg, { x: marginX, y: cursorY, width: finalW, height: finalH })
               cursorY -= 10
             }
           }
+          continue
+        }
+
+        // COMPILE INTERACTIVE FORM FIELDS
+        if (block.type === "formfield") {
+          const form = pdf.getForm()
+          try {
+            const fieldName = block.name || `field-${crypto.randomUUID().slice(0, 4)}`
+            if (block.fieldType === "text") {
+              const textField = form.createTextField(fieldName)
+              textField.setText(block.value || "")
+              textField.addToPage(page, { x: marginX, y: cursorY - 15, width: 200, height: 20 })
+            } else if (block.fieldType === "checkbox") {
+              const checkBox = form.createCheckBox(fieldName)
+              if (block.value === "true" || block.checked) checkBox.check()
+              checkBox.addToPage(page, { x: marginX, y: cursorY - 15, width: 16, height: 16 })
+            } else if (block.fieldType === "select") {
+              const dropdown = form.createDropdown(fieldName)
+              dropdown.setOptions(block.options || ["Option 1", "Option 2", "Option 3"])
+              dropdown.select(block.value || "Option 1")
+              dropdown.addToPage(page, { x: marginX, y: cursorY - 15, width: 150, height: 20 })
+            }
+          } catch (e) {
+            console.error("Failed to build form field in background thread", e)
+          }
+          cursorY -= 32
           continue
         }
         
@@ -104,7 +130,7 @@ self.addEventListener("message", async (event) => {
         
         if (cursorY < 50) {
           page = pdf.addPage([width, height])
-          cursorY = height - 50 - size
+          cursorY = height - 60 - size
         }
         
         const spans = block.spans || []
@@ -153,7 +179,7 @@ self.addEventListener("message", async (event) => {
           cursorY -= (size + 4)
           if (cursorY < 50) {
             page = pdf.addPage([width, height])
-            cursorY = height - 50 - size
+            cursorY = height - 60 - size
           }
           
           let startX = marginX
@@ -189,6 +215,25 @@ self.addEventListener("message", async (event) => {
         }
         cursorY -= 4
       }
+      
+      // Stamp watermarks or page numbers
+      if (settings.watermarkText) {
+        const pages = pdf.getPages()
+        for (const p of pages) {
+          p.drawText(settings.watermarkText, {
+            x: width / 3,
+            y: height / 2,
+            size: 60,
+            font: boldFont,
+            color: rgb(0.7, 0.7, 0.7),
+            opacity: 0.15,
+            rotate: degrees(-30)
+          })
+        }
+      }
+
+      // Password Encryption integration inside Worker will be wrapped on main thread.
+
       
       const compiledBytes = await pdf.save()
       
@@ -283,10 +328,8 @@ self.addEventListener("message", async (event) => {
         copiedPage.setRotation(degrees(item.rotation))
       }
 
-      // 2. Vector Grayscale Filter (Specification 4: non-destructive color conversion)
+      // 2. Vector Grayscale Filter
       if (toolId === "grayscale-pdf") {
-        // Draw full-page visual light gray overlay with low opacity
-        // to convert the visual color space of images/vectors non-destructively
         copiedPage.drawRectangle({
           x: 0,
           y: 0,
@@ -297,7 +340,7 @@ self.addEventListener("message", async (event) => {
         })
       }
 
-      // 3. Bates Stamping Engine (Specification 3)
+      // 3. Bates Stamping Engine
       if (applyBates || (showBates && config)) {
         const prefix = applyBates ? batesPrefix : (config?.watermarkText ? (config?.watermarkText + "-") : "BATES-")
         const padding = applyBates ? batesPadding : 6
@@ -312,12 +355,10 @@ self.addEventListener("message", async (event) => {
         let bx = width - margin - textWidth
         let by = margin
 
-        // Hook coordinate layout sandbox positioning override
         if (config && config.batesX !== undefined && config.batesY !== undefined) {
           bx = config.batesX
           by = config.batesY
         } else {
-          // Standard preset locations
           if (position === "Top Left") { bx = margin; by = height - margin }
           else if (position === "Top Center") { bx = (width - textWidth) / 2; by = height - margin }
           else if (position === "Top Right") { bx = width - margin - textWidth; by = height - margin }
@@ -325,7 +366,6 @@ self.addEventListener("message", async (event) => {
           else if (position === "Bottom Center") { bx = (width - textWidth) / 2; by = margin }
         }
 
-        // Draw backdrop rectangle to verify stamp text legibility
         copiedPage.drawRectangle({
           x: bx - 4,
           y: by - 2,
@@ -346,7 +386,7 @@ self.addEventListener("message", async (event) => {
         batesCounter++
       }
 
-      // 4. Interactive Watermark Placement (Specification 5)
+      // 4. Interactive Watermark Placement
       if (showWatermark && config) {
         const watermarkStr = config.watermarkText || "DRAFT"
         const wSize = config.watermarkSize || 60
@@ -363,13 +403,12 @@ self.addEventListener("message", async (event) => {
         })
       }
 
-      // 5. Signature Block Placement (Specification 5)
+      // 5. Signature Block Placement
       if (showSignature && config) {
         const sigStr = config.signatureText || "Authorized Sign"
         const sX = config.signatureX
         const sY = config.signatureY
         
-        // Draw double line overlay for signature
         copiedPage.drawLine({
           start: { x: sX, y: sY + 12 },
           end: { x: sX + 120, y: sY + 12 },
@@ -389,9 +428,11 @@ self.addEventListener("message", async (event) => {
       pdf.addPage(copiedPage)
     }
 
+    // Password encryption option inside visual editing compiler will be wrapped on main thread.
+
+
     const compiledBytes = await pdf.save({ useObjectStreams })
     
-    // Transfer buffer to parent thread
     ;(self as any).postMessage({
       success: true,
       buffer: compiledBytes.buffer,
