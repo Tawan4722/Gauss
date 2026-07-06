@@ -24,7 +24,7 @@ import {
 } from "lucide-react"
 
 // Icon mapping helper for tools
-export const toolIconMap: Record<string, React.ComponentType<any>> = {
+export const toolIconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   image: Image,
   ocr: ScanText,
   "merge-pdf": Layers,
@@ -46,6 +46,11 @@ export const categoryKeyMap: Record<string, string> = {
   "Documents & Text": "category.docs",
   "File Operations": "category.files",
   "Data & Security": "category.security",
+  "PDF Operations": "category.pdf",
+  "Conversions": "category.conversions",
+  "Security & Trust": "category.security",
+  "AI Suite": "category.ai",
+  "Productivity": "category.productivity",
 }
 
 export default function TopNav() {
@@ -80,7 +85,10 @@ export default function TopNav() {
 
   // Close dropdown when route changes
   useEffect(() => {
-    setDropdownOpen(false)
+    const handle = requestAnimationFrame(() => {
+      setDropdownOpen(false)
+    })
+    return () => cancelAnimationFrame(handle)
   }, [pathname])
 
   const isToolActive = pathname.startsWith("/tools/")

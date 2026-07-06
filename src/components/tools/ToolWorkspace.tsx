@@ -1,15 +1,14 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from "react"
-import { useRouter } from "next/navigation"
 import { 
-  FileText, PlusCircle, Trash2, FolderPlus, Download, CheckCircle, RefreshCw, Layers,
-  Lock, Unlock, Shield, PenTool, Minimize, Maximize, Sparkles, Languages,
-  HelpCircle, Sliders, Play, Server, Cloud, Cpu, Smartphone, Monitor, Code, Eye,
-  RefreshCcw, Compass, ArrowRight, RotateCw, ZoomIn, ZoomOut, Check, ChevronDown, Trash, Camera
+  Trash2, FolderPlus, Download, RefreshCw,
+  PenTool, Minimize,
+  Play, Cloud, Smartphone, Monitor,
+  Trash, Camera
 } from "lucide-react"
 import WordEditor from "./WordEditor"
-import { toolRegistry, type Tool, type ToolSettings } from "@/lib/tools/registry"
+import { toolRegistry, type ToolSettings } from "@/lib/tools/registry"
 import { processTool, type ToolOutput } from "@/lib/tools/processors"
 
 // Templates for Local Documents Explorer
@@ -33,8 +32,7 @@ const DOCUMENT_TEMPLATES = [
     title: "Project Proposal",
     content: `<h1 style="font-family:'Geist Sans';font-size:26pt;color:#22d3ee;margin:0 0 8px;font-weight:bold;">PROJECT GAUSS STUDIO</h1>
               <p style="font-size:12pt;color:#fbbf24;margin-bottom:24px;">Secure Offline Document Utilities Platform</p>
-              <h2 style="font-size:15pt;color:#22d3ee;margin-top:20px;">1. EXECUTIVE SUMMARY</h2>
-              <p style="font-size:11pt;color:#e4e4e7;line-height:1.6;">Gauss is designed to address the growing corporate demand for highly private document formatting, file conversions, and OCR scans. Traditional SaaS tools require constant transit of legal contracts and financial data. Gauss operates 100% locally inside client browser memory, offering zero network overhead and total data safety.</p>`
+              <p style="font-size:10pt;color:#e4e4e7;line-height:1.7;">Gauss Document Studio provides desktop-grade file formatting, programmatic Bates numbering, visual redaction, and multi-file conversions completely in browser memory.</p>`
   },
   {
     id: "template-contract",
@@ -53,7 +51,6 @@ interface DocumentRecord {
 }
 
 export default function ToolWorkspace({ toolId: initialToolId }: { toolId: string }) {
-  const router = useRouter()
   const editorRef = useRef<HTMLDivElement>(null)
 
   // Core Active tool selections
@@ -103,17 +100,21 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
   const [workflowRunning, setWorkflowRunning] = useState(false)
 
   // Cloud backup sync simulators logs
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [cloudSyncedFiles, setCloudSyncedFiles] = useState<string[]>([])
   const [gdriveConnected, setGdriveConnected] = useState(false)
   const [dropboxConnected, setDropboxConnected] = useState(false)
   const [syncLogs, setSyncLogs] = useState<string[]>(["Local environment ready. Connection initialized."])
 
   // Camera stream simulator (Scan to PDF)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [cameraActive, setCameraActive] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [capturedScans, setCapturedScans] = useState<string[]>([])
 
   // Visual document stats counter
   const [wordCount, setWordCount] = useState(0)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [charCount, setCharCount] = useState(0)
   const pageCount = Math.max(1, Math.ceil(wordCount / 300))
 
@@ -187,6 +188,7 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
       updateStats()
     }, 4000)
     return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeDocId, documents])
 
   // 5. Add Document or load Template
@@ -308,8 +310,8 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
       // If workflow chains, mirror backup
       triggerSyncMirror(result.outputs.map(o => o.name))
 
-    } catch (e: any) {
-      setProcessLog(`ERROR: ${e?.message || "Execution failed."}`)
+    } catch (e) {
+      setProcessLog(`ERROR: ${(e as Error)?.message || "Execution failed."}`)
     }
     setProcessing(false)
   }
@@ -339,8 +341,8 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
           currentInput = result.outputs.map(o => new File([o.blob], o.name, { type: o.type }))
           setWorkflowLog(prev => [...prev, `  ✓ Done. Generated output: ${result.outputs[0].name}`])
         }
-      } catch (err: any) {
-        setWorkflowLog(prev => [...prev, `  ❌ Error in step ${stepTool.name}: ${err?.message || err}`])
+      } catch (err) {
+        setWorkflowLog(prev => [...prev, `  ❌ Error in step ${stepTool.name}: ${(err as Error)?.message || String(err)}`])
         setWorkflowRunning(false)
         return
       }
@@ -643,7 +645,7 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
                     return (
                       <button
                         key={dev.id}
-                        onClick={() => { setDeviceWrapper(dev.id as any); addSyncLog(`Switched chassis layout view to: ${dev.label}`) }}
+                        onClick={() => { setDeviceWrapper(dev.id as "none" | "macos" | "windows" | "iphone" | "android"); addSyncLog(`Switched chassis layout view to: ${dev.label}`) }}
                         className={`flex items-center gap-2 px-3 py-2 border rounded-xl text-left transition font-semibold ${
                           deviceWrapper === dev.id 
                             ? "bg-cyan-500/10 border-cyan-400/40 text-cyan-300" 
@@ -708,7 +710,6 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
               </div>
               <WordEditor 
                 editorRef={editorRef} 
-                files={uploadedFiles} 
                 onInsertImage={(f) => setUploadedFiles(prev => [...prev, f])}
                 wordCount={wordCount}
                 pageCount={pageCount}
@@ -738,7 +739,6 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
               </div>
               <WordEditor 
                 editorRef={editorRef} 
-                files={uploadedFiles} 
                 onInsertImage={(f) => setUploadedFiles(prev => [...prev, f])}
                 wordCount={wordCount}
                 pageCount={pageCount}
@@ -764,7 +764,6 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
               <div className="flex-1 overflow-y-auto pt-8">
                 <WordEditor 
                   editorRef={editorRef} 
-                  files={uploadedFiles} 
                   onInsertImage={(f) => setUploadedFiles(prev => [...prev, f])}
                   wordCount={wordCount}
                   pageCount={pageCount}
@@ -789,7 +788,6 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
               <div className="flex-1 overflow-y-auto pt-6">
                 <WordEditor 
                   editorRef={editorRef} 
-                  files={uploadedFiles} 
                   onInsertImage={(f) => setUploadedFiles(prev => [...prev, f])}
                   wordCount={wordCount}
                   pageCount={pageCount}
@@ -812,7 +810,6 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
             <div className="w-full max-w-4xl">
               <WordEditor 
                 editorRef={editorRef} 
-                files={uploadedFiles} 
                 onInsertImage={(f) => setUploadedFiles(prev => [...prev, f])}
                 wordCount={wordCount}
                 pageCount={pageCount}

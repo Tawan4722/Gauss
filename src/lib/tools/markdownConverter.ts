@@ -136,7 +136,7 @@ export function htmlToMarkdown(html: string): string {
 
 export function markdownToHtml(md: string): string {
   // Convert standard markdown structures into safe HTML
-  let html = md
+  const html = md
     // Replace headings
     .replace(/^# (.*$)/gim, '<h1 style="font-family:\'Geist Sans\';font-size:24pt;color:#22d3ee;font-weight:bold;margin:0 0 16px;">$1</h1>')
     .replace(/^## (.*$)/gim, '<h2 style="font-family:\'Geist Sans\';font-size:18pt;color:#22d3ee;font-weight:bold;margin:16px 0 8px;">$1</h2>')
@@ -159,9 +159,9 @@ export function markdownToHtml(md: string): string {
   const lines = html.split("\n");
   let inList = false;
   let listType: "ul" | "ol" | null = null;
-  let formattedLines: string[] = [];
+  const formattedLines: string[] = [];
 
-  for (let line of lines) {
+  for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) {
       if (inList) {

@@ -19,12 +19,10 @@ export type ToolProcessResult = {
 
 const cleanName = (value: string) =>
   value.trim().replace(/[^a-z0-9._-]+/gi, "-").replace(/-+/g, "-").replace(/^[-.]+|[-.]+$/g, "") || "gauss";
-const extensionOf = (name: string) => (name.lastIndexOf(".") >= 0 ? name.slice(name.lastIndexOf(".") + 1).toLowerCase() : "");
 const baseNameOf = (name: string) => cleanName(name.lastIndexOf(".") >= 0 ? name.slice(0, name.lastIndexOf(".")) : name);
 const getString = (settings: ToolSettings, key: string, fallback = "") => String(settings[key] ?? fallback);
 const getNumber = (settings: ToolSettings, key: string, fallback: number) => Number(settings[key] ?? fallback);
 const getBoolean = (settings: ToolSettings, key: string, fallback: boolean) => Boolean(settings[key] ?? fallback);
-const csvEscape = (value: string | number | boolean) => `"${String(value).replaceAll('"', '""')}"`;
 
 const createOutput = async (name: string, blob: Blob, message: string): Promise<ToolOutput> => ({
   id: `${name}-${blob.size}-${crypto.randomUUID()}`,
@@ -78,24 +76,6 @@ const writeWrappedText = (page: PDFPage, text: string, font: Awaited<ReturnType<
   }
 };
 
-const zipFiles = async (
-  files: Array<{ name: string; blob: Blob }>,
-  zipName: string,
-  compressionLevel: number,
-  extraFiles: Array<{ name: string; content: string }> = [],
-) => {
-  const zip = new JSZip();
-  files.forEach((file) => zip.file(file.name, file.blob));
-  extraFiles.forEach((file) => zip.file(file.name, file.content));
-  const blob = await zip.generateAsync({
-    type: "blob",
-    compression: compressionLevel > 0 ? "DEFLATE" : "STORE",
-    compressionOptions: { level: Math.min(Math.max(compressionLevel, 0), 9) },
-    mimeType: "application/zip",
-    comment: "Created by Gauss",
-  });
-  return createOutput(`${cleanName(zipName)}.zip`, blob, `ZIP created with ${files.length + extraFiles.length} item(s).`);
-};
 
 export const processTool = async (tool: Tool, files: File[], settings: ToolSettings): Promise<ToolProcessResult> => {
   // 1. Password Protection (Protect PDF)
@@ -561,9 +541,8 @@ export const processTool = async (tool: Tool, files: File[], settings: ToolSetti
 
   // 21. AI Summarizer
   if (tool.id === "ai-summarizer") {
-    let text = "Sample Document Summary details.";
     if (files.length > 0) {
-      text = await files[0].text();
+      await files[0].text();
     }
     const docSummary = `AI SUMMARY REPORT (100% Offline Analyser)\n----------------------------------------\nReading Time: ~3 mins\nReadability: Legal Professional Grade (High)\nKey Focus Areas:\n- Offline data boundary protection\n- Multi-document visual page compiler workflows\n- High-fidelity cryptography hashing standards`;
     const docBlob = new Blob([docSummary], { type: "text/plain" });
@@ -597,7 +576,7 @@ export const processTool = async (tool: Tool, files: File[], settings: ToolSetti
   }
 
   if (tool.id === "image") {
-    const format = getString(settings, "format", "WebP") as any;
+    const format = getString(settings, "format", "WebP") as string;
     const outputs: ToolOutput[] = [];
     for (const file of files) {
       outputs.push(await createOutput(`${baseNameOf(file.name)}.${format === "Original" ? "png" : format.toLowerCase()}`, file, "Processed image format converter."));

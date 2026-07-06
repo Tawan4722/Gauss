@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from "react"
-import { X, ZoomIn, ZoomOut, Move, Settings, Type, PenTool, Hash } from "lucide-react"
+import { X, ZoomIn, ZoomOut, Settings, PenTool, Hash } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface LayoutSandboxProps {
@@ -68,7 +68,10 @@ export default function LayoutSandbox({
 
   useEffect(() => {
     if (isOpen) {
-      setConfig(initialConfig)
+      const handle = requestAnimationFrame(() => {
+        setConfig(initialConfig)
+      })
+      return () => cancelAnimationFrame(handle)
     }
   }, [isOpen, initialConfig])
 
@@ -118,7 +121,7 @@ export default function LayoutSandbox({
     })
   }
 
-  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>, item: "watermark" | "signature" | "bates") => {
+  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
     event.currentTarget.releasePointerCapture(event.pointerId)
     setActiveDragItem(null)
   }
@@ -214,7 +217,7 @@ export default function LayoutSandbox({
                 <div
                   onPointerDown={(e) => handlePointerDown(e, "bates")}
                   onPointerMove={(e) => handlePointerMove(e, "bates")}
-                  onPointerUp={(e) => handlePointerUp(e, "bates")}
+                  onPointerUp={handlePointerUp}
                   className={cn(
                     "absolute cursor-move select-none rounded border px-3 py-1 font-mono flex items-center gap-1.5 backdrop-blur-sm transition-shadow shadow-md",
                     activeDragItem === "bates" 
@@ -243,7 +246,7 @@ export default function LayoutSandbox({
                 <div
                   onPointerDown={(e) => handlePointerDown(e, "watermark")}
                   onPointerMove={(e) => handlePointerMove(e, "watermark")}
-                  onPointerUp={(e) => handlePointerUp(e, "watermark")}
+                  onPointerUp={handlePointerUp}
                   className={cn(
                     "absolute cursor-move select-none rounded border px-4 py-2 flex items-center justify-center font-black tracking-widest text-center whitespace-nowrap",
                     activeDragItem === "watermark" 
@@ -268,7 +271,7 @@ export default function LayoutSandbox({
                 <div
                   onPointerDown={(e) => handlePointerDown(e, "signature")}
                   onPointerMove={(e) => handlePointerMove(e, "signature")}
-                  onPointerUp={(e) => handlePointerUp(e, "signature")}
+                  onPointerUp={handlePointerUp}
                   className={cn(
                     "absolute cursor-move select-none rounded border p-3 flex flex-col items-center justify-center font-bold tracking-tight text-center min-w-[140px]",
                     activeDragItem === "signature" 

@@ -114,7 +114,7 @@ export async function importFromDocx(file: File): Promise<string> {
   }
 
   function parseParagraph(pNode: Element): string {
-    let pPrNode = Array.from(pNode.children).find(c => c.localName === "pPr");
+    const pPrNode = Array.from(pNode.children).find(c => c.localName === "pPr");
     let align = "left";
     let isHeading1 = false;
     let isHeading2 = false;
@@ -154,17 +154,9 @@ export async function importFromDocx(file: File): Promise<string> {
     
     // Check if paragraph is list item
     let isList = false;
-    let isNumbered = false;
     const numPrNode = pPrNode ? Array.from(pPrNode.children).find(c => c.localName === "numPr") : null;
     if (numPrNode) {
       isList = true;
-      const numIdNode = Array.from(numPrNode.children).find(c => c.localName === "numId");
-      if (numIdNode) {
-        const idVal = numIdNode.getAttribute("w:val") || numIdNode.getAttribute("val");
-        if (idVal && idVal !== "0") {
-          isNumbered = true; // Simple heuristic for lists
-        }
-      }
     }
 
     children.forEach(child => {

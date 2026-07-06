@@ -3,9 +3,9 @@
 import { useRef, useEffect, useCallback, useState } from "react"
 import { 
   Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  List, ListOrdered, Outdent, Indent, Undo, Redo, Image, Table, Link, Heading1, Heading2,
-  Heading3, Eye, FileText, Settings, ShieldAlert, Sparkles, HelpCircle, FileDown, PlusCircle, CheckSquare, ListPlus, Trash2, Scissors,
-  Type, Palette, AlignVerticalSpaceAround, FileCode, Search, ClipboardList, Info, Calendar, Milestone
+  List, ListOrdered, Outdent, Indent, Undo, Redo, Image as ImageIcon, Table, Link,
+  FileText, Settings, HelpCircle, FileDown, PlusCircle, Scissors,
+  Type, Palette, ClipboardList, Info, Calendar, Milestone
 } from "lucide-react"
 import { exportToDocx } from "@/lib/tools/docxExporter"
 import { importFromDocx } from "@/lib/tools/docxParser"
@@ -13,7 +13,6 @@ import { htmlToMarkdown, markdownToHtml } from "@/lib/tools/markdownConverter"
 
 interface WordEditorProps {
   editorRef: React.RefObject<HTMLDivElement | null>
-  files: File[]
   onInsertImage: (file: File) => void
   wordCount: number
   pageCount: number
@@ -27,6 +26,18 @@ interface WordEditorProps {
   setOrientation: (o: "Portrait" | "Landscape") => void
   pageSize: "A4" | "Letter" | "Legal"
   setPageSize: (s: "A4" | "Letter" | "Legal") => void
+}
+
+interface ExtendedWindow extends Window {
+  find(
+    aString: string,
+    aCaseSensitive?: boolean,
+    aBackwards?: boolean,
+    aWrapAround?: boolean,
+    aWholeWord?: boolean,
+    aSearchInFrames?: boolean,
+    aShowDialog?: boolean
+  ): boolean
 }
 
 function Divider() {
@@ -129,7 +140,6 @@ function SymbolPicker({ onSelectSymbol }: { onSelectSymbol: (sym: string) => voi
 
 export default function WordEditor({
   editorRef,
-  files,
   onInsertImage,
   wordCount,
   pageCount,
@@ -307,7 +317,7 @@ export default function WordEditor({
   // Find & Replace
   const handleFind = () => {
     if (!findText) return
-    const found = (window as any).find(findText, matchCase, false, true, matchWholeWord, false, false)
+    const found = (window as unknown as ExtendedWindow).find(findText, matchCase, false, true, matchWholeWord, false, false)
     if (!found) {
       setReplaceMessage("Phrase not found.")
     } else {
@@ -338,7 +348,7 @@ export default function WordEditor({
     window.getSelection()?.removeAllRanges()
     let found = true
     while (found) {
-      found = (window as any).find(findText, matchCase, false, true, matchWholeWord, false, false)
+      found = (window as unknown as ExtendedWindow).find(findText, matchCase, false, true, matchWholeWord, false, false)
       if (found) {
         const sel = window.getSelection()
         if (sel && sel.rangeCount > 0) {
@@ -447,8 +457,8 @@ export default function WordEditor({
         editorRef.current.innerHTML = htmlContent
         alert(`Successfully imported: ${file.name}`)
       }
-    } catch (err: any) {
-      alert(`Error reading file: ${err?.message || err}`)
+    } catch (err) {
+      alert(`Error reading file: ${(err as Error)?.message || String(err)}`)
     }
     
     e.target.value = ""
@@ -465,7 +475,7 @@ export default function WordEditor({
       const blob = await exportToDocx(contentHtml, {
         pageSize,
         orientation,
-        margins: isCustomMargin ? customMargins : (margins as any),
+        margins: isCustomMargin ? customMargins : (margins as "normal" | "narrow" | "wide"),
         watermarkText,
         headerText,
         footerText
@@ -600,7 +610,7 @@ export default function WordEditor({
               type="button"
               onMouseDown={(e) => { 
                 e.preventDefault()
-                setActiveTab(tab.id as any) 
+                setActiveTab(tab.id as "file" | "home" | "insert" | "layout" | "review" | "help") 
                 if (tab.id === "review") compileStatistics()
               }}
               className={[
@@ -801,7 +811,7 @@ export default function WordEditor({
               onClick={() => imageInputRef.current?.click()}
               className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-zinc-300 hover:bg-zinc-900 hover:text-white rounded transition"
             >
-              <Image className="h-4 w-4 text-cyan-400" />
+              <ImageIcon className="h-4 w-4 text-cyan-400" />
               <span>Picture</span>
             </button>
             
@@ -1073,7 +1083,7 @@ export default function WordEditor({
                   onChange={(e) => setMatchWholeWord(e.target.checked)}
                   className="rounded border-zinc-750 bg-zinc-950 text-cyan-400 accent-cyan-300"
                 />
-                <span>"W"</span>
+                <span>&quot;W&quot;</span>
               </label>
               
               {replaceMessage && (
@@ -1095,7 +1105,7 @@ export default function WordEditor({
         {/* TAB: HELP GUIDE */}
         {activeTab === "help" && (
           <div className="text-zinc-400 text-xs flex items-center justify-between w-full">
-            <span>💡 <strong>Docs Studio Guide</strong>: Write text, format styling, or drag-and-drop images. Press 'Export PDF' in the Right Panel to build your documents.</span>
+            <span>💡 <strong>Docs Studio Guide</strong>: Write text, format styling, or drag-and-drop images. Press &apos;Export PDF&apos; in the Right Panel to build your documents.</span>
             <span className="font-mono text-[9px] text-cyan-400">Gauss Engine v2.5</span>
           </div>
         )}

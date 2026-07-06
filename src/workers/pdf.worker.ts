@@ -1,4 +1,13 @@
-import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib"
+import { PDFDocument, rgb, degrees, StandardFonts, PDFFont } from "pdf-lib"
+
+interface LineSegment {
+  text: string
+  bold?: boolean
+  italic?: boolean
+  underline?: boolean
+  font: PDFFont
+  width: number
+}
 
 self.addEventListener("message", async (event) => {
   const { files, toolId, editorPages, settings, config } = event.data
@@ -115,14 +124,11 @@ self.addEventListener("message", async (event) => {
         }
         
         let size = 10
-        let currentFont = font
         if (block.type === "h1") {
           size = 20
-          currentFont = boldFont
           cursorY -= 15
         } else if (block.type === "h2") {
           size = 14
-          currentFont = boldFont
           cursorY -= 12
         } else {
           cursorY -= 5
@@ -134,8 +140,8 @@ self.addEventListener("message", async (event) => {
         }
         
         const spans = block.spans || []
-        const lines: any[] = []
-        let currentLine: any[] = []
+        const lines: LineSegment[][] = []
+        let currentLine: LineSegment[] = []
         let currentLineWidth = 0
         const maxWidth = width - (marginX * 2)
         
@@ -237,7 +243,7 @@ self.addEventListener("message", async (event) => {
       
       const compiledBytes = await pdf.save()
       
-      ;(self as any).postMessage({
+      ;(self as unknown as Worker).postMessage({
         success: true,
         buffer: compiledBytes.buffer,
         pageCount: pdf.getPageCount()
@@ -248,7 +254,7 @@ self.addEventListener("message", async (event) => {
 
     // Reconstruct PDFDocument instances in worker memory
     const loadedDocs = await Promise.all(
-      files.map(async (f: any) => PDFDocument.load(f.buffer))
+      files.map(async (f: { buffer: ArrayBuffer }) => PDFDocument.load(f.buffer))
     )
 
     const pdf = await PDFDocument.create()
@@ -308,7 +314,7 @@ self.addEventListener("message", async (event) => {
         rotation: 0,
       }))
     } else {
-      pagesToCompile = files.flatMap((f: any, fileIndex: number) => {
+      pagesToCompile = files.flatMap((f: { buffer: ArrayBuffer }, fileIndex: number) => {
         const doc = loadedDocs[fileIndex]
         return Array.from({ length: doc.getPageCount() }, (_, pageIndex) => ({
           fileIndex,
@@ -433,16 +439,17 @@ self.addEventListener("message", async (event) => {
 
     const compiledBytes = await pdf.save({ useObjectStreams })
     
-    ;(self as any).postMessage({
+    ;(self as unknown as Worker).postMessage({
       success: true,
       buffer: compiledBytes.buffer,
       pageCount: pagesToCompile.length
     }, [compiledBytes.buffer])
 
-  } catch (error: any) {
-    self.postMessage({
+  } catch (error) {
+    const errMessage = (error as Error)?.message || "PDF Web Worker assembly failed."
+    ;(self as unknown as Worker).postMessage({
       success: false,
-      error: error?.message || "PDF Web Worker assembly failed."
+      error: errMessage
     })
   }
 })

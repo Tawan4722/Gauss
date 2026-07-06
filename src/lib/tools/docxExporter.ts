@@ -246,7 +246,6 @@ function buildDocumentXml(html: string, options: DocxExportOptions): string {
     const align = getAlignment(el);
     const alignmentXml = align !== "left" ? `<w:jc w:val="${align}"/>` : "";
     
-    let pStyleXml = "";
     let runPropsXml = "";
     const tagName = el.tagName.toLowerCase();
 
