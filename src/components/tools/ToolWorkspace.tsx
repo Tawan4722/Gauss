@@ -460,6 +460,41 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
     }
   }
 
+  const renameActiveDoc = (newTitle: string) => {
+    const updated = documents.map(d => {
+      if (d.id === activeDocId) {
+        return { ...d, title: newTitle, updatedAt: new Date().toISOString() }
+      }
+      return d
+    })
+    setDocuments(updated)
+    setDocumentsInStorage(updated)
+  }
+
+  const renderWordEditor = (overrides?: { margins?: string; orientation?: "Portrait" | "Landscape"; pageSize?: "A4" | "Letter" | "Legal" }) => {
+    const activeDoc = documents.find(d => d.id === activeDocId)
+    return (
+      <WordEditor 
+        editorRef={editorRef} 
+        onInsertImage={(f) => setUploadedFiles(prev => [...prev, f])}
+        wordCount={wordCount}
+        pageCount={pageCount}
+        watermarkText={watermarkText}
+        setWatermarkText={setWatermarkText}
+        showPageNumbers={showPageNumbers}
+        setShowPageNumbers={setShowPageNumbers}
+        margins={overrides?.margins || margins}
+        setMargins={setMargins}
+        orientation={overrides?.orientation || orientation}
+        setOrientation={setOrientation}
+        pageSize={overrides?.pageSize || pageSize}
+        setPageSize={setPageSize}
+        docTitle={activeDoc?.title || "Untitled Document"}
+        onRenameDoc={renameActiveDoc}
+      />
+    )
+  }
+
   return (
     <div className="min-h-screen bg-[#070807] text-white flex flex-col pt-16">
       
@@ -708,22 +743,7 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
                 <span className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
                 <span className="text-[10px] text-zinc-500 ml-4 font-bold font-mono">gauss-studio.app</span>
               </div>
-              <WordEditor 
-                editorRef={editorRef} 
-                onInsertImage={(f) => setUploadedFiles(prev => [...prev, f])}
-                wordCount={wordCount}
-                pageCount={pageCount}
-                watermarkText={watermarkText}
-                setWatermarkText={setWatermarkText}
-                showPageNumbers={showPageNumbers}
-                setShowPageNumbers={setShowPageNumbers}
-                margins={margins}
-                setMargins={setMargins}
-                orientation={orientation}
-                setOrientation={setOrientation}
-                pageSize={pageSize}
-                setPageSize={setPageSize}
-              />
+              {renderWordEditor()}
             </div>
           )}
 
@@ -737,22 +757,7 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
                   <span className="text-zinc-500 text-xs">×</span>
                 </div>
               </div>
-              <WordEditor 
-                editorRef={editorRef} 
-                onInsertImage={(f) => setUploadedFiles(prev => [...prev, f])}
-                wordCount={wordCount}
-                pageCount={pageCount}
-                watermarkText={watermarkText}
-                setWatermarkText={setWatermarkText}
-                showPageNumbers={showPageNumbers}
-                setShowPageNumbers={setShowPageNumbers}
-                margins={margins}
-                setMargins={setMargins}
-                orientation={orientation}
-                setOrientation={setOrientation}
-                pageSize={pageSize}
-                setPageSize={setPageSize}
-              />
+              {renderWordEditor()}
             </div>
           )}
 
@@ -762,22 +767,7 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
                 <span className="w-3 h-3 rounded-full bg-zinc-900 border border-zinc-800" />
               </div>
               <div className="flex-1 overflow-y-auto pt-8">
-                <WordEditor 
-                  editorRef={editorRef} 
-                  onInsertImage={(f) => setUploadedFiles(prev => [...prev, f])}
-                  wordCount={wordCount}
-                  pageCount={pageCount}
-                  watermarkText={watermarkText}
-                  setWatermarkText={setWatermarkText}
-                  showPageNumbers={showPageNumbers}
-                  setShowPageNumbers={setShowPageNumbers}
-                  margins="narrow"
-                  setMargins={setMargins}
-                  orientation="Portrait"
-                  setOrientation={setOrientation}
-                  pageSize="A4"
-                  setPageSize={setPageSize}
-                />
+                {renderWordEditor({ margins: "narrow", orientation: "Portrait", pageSize: "A4" })}
               </div>
             </div>
           )}
@@ -786,44 +776,14 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
             <div className="w-[370px] border-[8px] border-zinc-850 rounded-[32px] bg-zinc-950 overflow-hidden shadow-2xl flex flex-col h-[720px] relative">
               <div className="absolute top-3 left-1/2 -translate-x-1/2 w-4 h-4 bg-zinc-900 rounded-full z-50" />
               <div className="flex-1 overflow-y-auto pt-6">
-                <WordEditor 
-                  editorRef={editorRef} 
-                  onInsertImage={(f) => setUploadedFiles(prev => [...prev, f])}
-                  wordCount={wordCount}
-                  pageCount={pageCount}
-                  watermarkText={watermarkText}
-                  setWatermarkText={setWatermarkText}
-                  showPageNumbers={showPageNumbers}
-                  setShowPageNumbers={setShowPageNumbers}
-                  margins="narrow"
-                  setMargins={setMargins}
-                  orientation="Portrait"
-                  setOrientation={setOrientation}
-                  pageSize="A4"
-                  setPageSize={setPageSize}
-                />
+                {renderWordEditor({ margins: "narrow", orientation: "Portrait", pageSize: "A4" })}
               </div>
             </div>
           )}
 
           {deviceWrapper === "none" && (
             <div className="w-full max-w-4xl">
-              <WordEditor 
-                editorRef={editorRef} 
-                onInsertImage={(f) => setUploadedFiles(prev => [...prev, f])}
-                wordCount={wordCount}
-                pageCount={pageCount}
-                watermarkText={watermarkText}
-                setWatermarkText={setWatermarkText}
-                showPageNumbers={showPageNumbers}
-                setShowPageNumbers={setShowPageNumbers}
-                margins={margins}
-                setMargins={setMargins}
-                orientation={orientation}
-                setOrientation={setOrientation}
-                pageSize={pageSize}
-                setPageSize={setPageSize}
-              />
+              {renderWordEditor()}
             </div>
           )}
 

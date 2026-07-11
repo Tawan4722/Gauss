@@ -11,17 +11,34 @@ interface DocxExportOptions {
 
 export async function exportToDocx(html: string, options: DocxExportOptions = {}): Promise<Blob> {
   const zip = new JSZip();
+  const hyperlinks: { id: string; target: string }[] = [];
+  const images: { id: string; ext: string; base64: string }[] = [];
 
-  // 1. [Content_Types].xml
-  zip.file("[Content_Types].xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+  // Build body content XML and collect hyperlinks/images dynamically
+  const documentXml = buildDocumentXml(html, options, hyperlinks, images);
+  zip.file("word/document.xml", documentXml);
+
+  // 1. [Content_Types].xml (including overrides for all image formats collected)
+  const imageExtensions = new Set<string>();
+  images.forEach(img => imageExtensions.add(img.ext));
+
+  let contentTypesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="xml" ContentType="application/xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>`;
+
+  imageExtensions.forEach(ext => {
+    const mime = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
+    contentTypesXml += `\n  <Default Extension="${ext}" ContentType="${mime}"/>`;
+  });
+
+  contentTypesXml += `
   <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
   <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
   <Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>
   <Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>
-</Types>`);
+</Types>`;
+  zip.file("[Content_Types].xml", contentTypesXml);
 
   // 2. _rels/.rels
   zip.file("_rels/.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -30,11 +47,27 @@ export async function exportToDocx(html: string, options: DocxExportOptions = {}
 </Relationships>`);
 
   // 3. word/_rels/document.xml.rels
-  zip.file("word/_rels/document.xml.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+  let relsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rIdHdr" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/>
-  <Relationship Id="rIdFtr" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>
-</Relationships>`);
+  <Relationship Id="rIdFtr" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>`;
+
+  hyperlinks.forEach(hl => {
+    const escapedTarget = hl.target
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&apos;");
+    relsXml += `\n  <Relationship Id="${hl.id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${escapedTarget}" TargetMode="External"/>`;
+  });
+
+  images.forEach(img => {
+    relsXml += `\n  <Relationship Id="${img.id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image_${img.id}.${img.ext}"/>`;
+  });
+
+  relsXml += `\n</Relationships>`;
+  zip.file("word/_rels/document.xml.rels", relsXml);
 
   // 4. word/styles.xml
   zip.file("word/styles.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -83,16 +116,22 @@ export async function exportToDocx(html: string, options: DocxExportOptions = {}
       <w:t>${footerContent}</w:t>
     </w:r>
   </w:p>
-</w:ftr>`);
+</w:hdr>`);
 
-  // Build body content XML
-  const documentXml = buildDocumentXml(html, options);
-  zip.file("word/document.xml", documentXml);
+  // 7. Write images to word/media/
+  images.forEach(img => {
+    zip.file(`word/media/image_${img.id}.${img.ext}`, img.base64, { base64: true });
+  });
 
   return await zip.generateAsync({ type: "blob" });
 }
 
-function buildDocumentXml(html: string, options: DocxExportOptions): string {
+function buildDocumentXml(
+  html: string,
+  options: DocxExportOptions,
+  hyperlinks: { id: string; target: string }[],
+  images: { id: string; ext: string; base64: string }[]
+): string {
   // Parse dimensions in twentieths of a point (dxa)
   // 1 pt = 20 dxa
   let width = 11906;  // A4 Width (595.27pt)
@@ -188,7 +227,6 @@ function buildDocumentXml(html: string, options: DocxExportOptions): string {
         sizePt = Math.round(parseFloat(fontSize) * 0.75);
       }
       if (sizePt) {
-        // sz is half-points (so 12pt is sz = 24)
         rPr += `<w:sz w:val="${Math.round(sizePt * 2)}"/>`;
       }
     }
@@ -260,7 +298,18 @@ function buildDocumentXml(html: string, options: DocxExportOptions): string {
 
     let indentXml = "";
     if (listInfo) {
-      indentXml = `<w:ind w:left="720" w:hanging="360"/>`;
+      // Calculate depth by counting ancestor list elements (ul/ol)
+      let depth = 0;
+      let parent = el.parentElement;
+      while (parent) {
+        const tag = parent.tagName.toLowerCase();
+        if (tag === "ul" || tag === "ol") {
+          depth++;
+        }
+        parent = parent.parentElement;
+      }
+      const leftIndent = depth * 360 + 360;
+      indentXml = `<w:ind w:left="${leftIndent}" w:hanging="360"/>`;
     }
 
     let listBulletXml = "";
@@ -274,7 +323,81 @@ function buildDocumentXml(html: string, options: DocxExportOptions): string {
 
     let runsXml = "";
     for (let i = 0; i < el.childNodes.length; i++) {
-      runsXml += parseTextRun(el.childNodes[i], runPropsXml);
+      const child = el.childNodes[i];
+      const childTag = child.nodeType === Node.ELEMENT_NODE ? (child as HTMLElement).tagName.toLowerCase() : "";
+
+      if (childTag === "a") {
+        const aEl = child as HTMLElement;
+        const href = aEl.getAttribute("href") || "#";
+        const hlId = `rIdLink${hyperlinks.length + 1}`;
+        hyperlinks.push({ id: hlId, target: href });
+        
+        const aStyle = getRunProps(aEl);
+        let innerRuns = "";
+        for (let j = 0; j < aEl.childNodes.length; j++) {
+          innerRuns += parseTextRun(aEl.childNodes[j], runPropsXml + aStyle);
+        }
+        runsXml += `<w:hyperlink r:id="${hlId}">${innerRuns}</w:hyperlink>`;
+      } else if (childTag === "img") {
+        const imgEl = child as HTMLImageElement;
+        const src = imgEl.src || imgEl.getAttribute("src") || "";
+        
+        if (src.startsWith("data:image/")) {
+          const mimeMatch = src.match(/^data:(image\/[a-zA-Z+]+);base64,(.*)$/);
+          if (mimeMatch) {
+            const mimeType = mimeMatch[1];
+            const base64Data = mimeMatch[2];
+            const ext = mimeType.split("/")[1].replace("jpeg", "jpg");
+            const imgId = `rIdImg${images.length + 1}`;
+            images.push({ id: imgId, ext, base64: base64Data });
+            
+            let widthPx = 300;
+            let heightPx = 200;
+            const styleWidth = imgEl.style.width || imgEl.getAttribute("width") || "";
+            const styleHeight = imgEl.style.height || imgEl.getAttribute("height") || "";
+            if (styleWidth) widthPx = parseFloat(styleWidth) || 300;
+            if (styleHeight) heightPx = parseFloat(styleHeight) || 200;
+            
+            const cx = Math.round(widthPx * 9525);
+            const cy = Math.round(heightPx * 9525);
+            const drawingId = images.length;
+            
+            runsXml += `<w:r><w:drawing>
+              <wp:inline distT="0" distB="0" distL="0" distR="0">
+                <wp:extent cx="${cx}" cy="${cy}"/>
+                <wp:effectExtent l="0" t="0" r="0" b="0"/>
+                <wp:docPr id="${drawingId}" name="Image ${drawingId}"/>
+                <wp:cNvGraphicFramePr>
+                  <a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1"/>
+                </wp:cNvGraphicFramePr>
+                <a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+                  <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                    <pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                      <pic:nvPicPr>
+                        <pic:cNvPr id="${drawingId}" name="Image ${drawingId}"/>
+                        <pic:cNvPicPr/>
+                      </pic:nvPicPr>
+                      <pic:blipFill>
+                        <a:blip r:embed="${imgId}"/>
+                        <a:stretch><a:fillRect/></a:stretch>
+                      </pic:blipFill>
+                      <pic:spPr>
+                        <a:xfrm>
+                          <a:off x="0" y="0"/>
+                          <a:ext cx="${cx}" cy="${cy}"/>
+                        </a:xfrm>
+                        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+                      </pic:spPr>
+                    </pic:pic>
+                  </a:graphicData>
+                </a:graphic>
+              </wp:inline>
+            </w:drawing></w:r>`;
+          }
+        }
+      } else {
+        runsXml += parseTextRun(child, runPropsXml);
+      }
     }
 
     return `<w:p>
@@ -300,10 +423,26 @@ function buildDocumentXml(html: string, options: DocxExportOptions): string {
         </w:tblBorders>
       </w:tblPr>`;
 
-    const rows = tableEl.querySelectorAll("tr");
+    const rows: HTMLElement[] = [];
+    function collectRows(node: HTMLElement) {
+      Array.from(node.children).forEach(child => {
+        const tag = child.tagName.toLowerCase();
+        if (tag === "tr") {
+          rows.push(child as HTMLElement);
+        } else if (tag === "tbody" || tag === "thead" || tag === "tfoot") {
+          collectRows(child as HTMLElement);
+        }
+      });
+    }
+    collectRows(tableEl);
+
     rows.forEach(row => {
       tblXml += "<w:tr>";
-      const cells = row.querySelectorAll("td, th");
+      const cells = Array.from(row.children).filter(c => {
+        const tag = c.tagName.toLowerCase();
+        return tag === "td" || tag === "th";
+      }) as HTMLElement[];
+
       cells.forEach(cell => {
         const cellEl = cell as HTMLElement;
         const bg = cellEl.style.backgroundColor || "";
@@ -327,7 +466,7 @@ function buildDocumentXml(html: string, options: DocxExportOptions): string {
           const alignXml = align ? `<w:jc w:val="${align}"/>` : "";
           const text = cellEl.textContent || "";
           const escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-          tblXml += `<w:p><w:pPr>${alignXml}</w:pPr><w:r><w:t>${escaped}</w:t></w:r></w:p>`;
+          tblXml += `<w:p><w:pPr>${alignXml}</w:pPr><w:r><w:t>${escaped}</w:t></w:r></p>`;
         } else {
           Array.from(cellEl.children).forEach(child => {
             tblXml += parseParagraph(child as HTMLElement);
@@ -345,38 +484,63 @@ function buildDocumentXml(html: string, options: DocxExportOptions): string {
 
   function parseList(listEl: HTMLElement, type: "ul" | "ol"): string {
     let listXml = "";
-    const items = listEl.querySelectorAll("li");
+    const items = Array.from(listEl.children).filter(c => c.tagName.toLowerCase() === "li");
     items.forEach((item, index) => {
       listXml += parseParagraph(item as HTMLElement, { type, index: index + 1 });
     });
     return listXml;
   }
 
-  // Walk structural blocks
+  // Walk structural blocks, grouping consecutive root inline nodes into virtual paragraphs
+  let currentInlineNodes: Node[] = [];
+  
+  function flushPendingParagraph() {
+    if (currentInlineNodes.length === 0) return;
+    const virtualP = document.createElement("p");
+    currentInlineNodes.forEach(n => virtualP.appendChild(n.cloneNode(true)));
+    bodyXml += parseParagraph(virtualP);
+    currentInlineNodes = [];
+  }
+
   for (let i = 0; i < body.childNodes.length; i++) {
     const node = body.childNodes[i];
-    if (node.nodeType !== Node.ELEMENT_NODE) continue;
-    const el = node as HTMLElement;
-    const tagName = el.tagName.toLowerCase();
+    let isBlock = false;
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const tag = (node as HTMLElement).tagName.toLowerCase();
+      isBlock = ["p", "div", "h1", "h2", "h3", "table", "ul", "ol", "hr"].includes(tag);
+    }
 
-    if (tagName === "table") {
-      bodyXml += parseTable(el);
-    } else if (tagName === "ul") {
-      bodyXml += parseList(el, "ul");
-    } else if (tagName === "ol") {
-      bodyXml += parseList(el, "ol");
-    } else if (tagName === "hr") {
-      // Page break in Word
-      bodyXml += `<w:p><w:pPr><w:pageBreakBefore/></w:pPr></w:p>`;
+    if (isBlock) {
+      flushPendingParagraph();
+      const el = node as HTMLElement;
+      const tag = el.tagName.toLowerCase();
+
+      if (tag === "table") {
+        bodyXml += parseTable(el);
+      } else if (tag === "ul") {
+        bodyXml += parseList(el, "ul");
+      } else if (tag === "ol") {
+        bodyXml += parseList(el, "ol");
+      } else if (tag === "hr") {
+        // Page break in Word
+        bodyXml += `<w:p><w:pPr><w:pageBreakBefore/></w:pPr></w:p>`;
+      } else {
+        bodyXml += parseParagraph(el);
+      }
     } else {
-      bodyXml += parseParagraph(el);
+      currentInlineNodes.push(node);
     }
   }
+
+  flushPendingParagraph();
 
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document
   xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
   xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+  xmlns:wp="http://schemas.openxmlformats.org/wordprocessingml/2006/wordprocessingDrawing"
+  xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+  xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"
 >
   <w:body>
     ${bodyXml}
