@@ -116,7 +116,7 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
   const [wordCount, setWordCount] = useState(0)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [charCount, setCharCount] = useState(0)
-  const pageCount = Math.max(1, Math.ceil(wordCount / 300))
+  const [pageCount, setPageCount] = useState(1)
 
   // 1. Initial Load Documents from LocalStorage
   useEffect(() => {
@@ -283,11 +283,12 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
     try {
       let finalFiles = [...uploadedFiles]
       
-      // If converting active document to PDF
-      if (activeToolId === "word-to-pdf" && editorRef.current) {
-        const docText = editorRef.current.innerText
-        const blob = new Blob([docText], { type: "text/plain" })
-        finalFiles = [new File([blob], `${documents.find(d => d.id === activeDocId)?.title || "document"}.docx`, { type: "text/plain" })]
+      // If converting active document to PDF: use browser print for fidelity
+      if (activeToolId === "word-to-pdf") {
+        window.print()
+        setProcessLog("COMPLETED: Print dialog opened. Use your browser's print-to-PDF option to save the document.")
+        setProcessing(false)
+        return
       }
 
       const result = await processTool(activeTool, finalFiles, {
@@ -479,6 +480,7 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
         onInsertImage={(f) => setUploadedFiles(prev => [...prev, f])}
         wordCount={wordCount}
         pageCount={pageCount}
+        onPageCountChange={setPageCount}
         watermarkText={watermarkText}
         setWatermarkText={setWatermarkText}
         showPageNumbers={showPageNumbers}

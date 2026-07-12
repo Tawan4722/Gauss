@@ -37,6 +37,7 @@ interface WordEditorProps {
   onInsertImage: (file: File) => void
   wordCount: number
   pageCount: number
+  onPageCountChange?: (count: number) => void
   watermarkText: string
   setWatermarkText: (text: string) => void
   showPageNumbers: boolean
@@ -120,6 +121,7 @@ export default function WordEditor({
   onInsertImage,
   wordCount,
   pageCount: passedPageCount,
+  onPageCountChange,
   watermarkText,
   setWatermarkText,
   showPageNumbers,
@@ -158,8 +160,11 @@ export default function WordEditor({
   // Floating word count toggle
   const [showWordCountFloat, setShowWordCountFloat] = useState(false)
 
-  // Document background color options
+  // Document background color options — always default white
   const [pageColor, setPageColor] = useState("#ffffff")
+
+  // Current page cursor tracker
+  const [currentPage, setCurrentPage] = useState(1)
 
   // Header/Footer active states
   const [headerText, setHeaderText] = useState("GAUSS PRIVATE DOCUMENT")
@@ -695,6 +700,104 @@ export default function WordEditor({
     return "1.0in 1.25in"
   }
 
+  // Accurate page count from scroll height
+  useEffect(() => {
+    const singlePagePx = orientation === "Landscape" ? 620 : 880
+    const zoomFactor = zoom / 100
+    const scaledPageHeight = singlePagePx * zoomFactor
+    const scrollH = editorRef.current?.scrollHeight || scaledPageHeight
+    const computed = Math.max(1, Math.ceil(scrollH / scaledPageHeight))
+    onPageCountChange?.(computed)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wordCount, zoom, orientation, editorRef])
+
+  // Cursor page tracker via selectionchange
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      if (!editorRef.current) return
+      const sel = window.getSelection()
+      if (!sel || sel.rangeCount === 0) return
+      const range = sel.getRangeAt(0)
+      const rect = range.getBoundingClientRect()
+      const editorRect = editorRef.current.getBoundingClientRect()
+      if (!editorRect.height) return
+      const singlePagePx = orientation === "Landscape" ? 620 : 880
+      const zoomFactor = zoom / 100
+      const scaledPageHeight = singlePagePx * zoomFactor
+      const relY = rect.top - editorRect.top + (editorRef.current.scrollTop || 0)
+      const page = Math.max(1, Math.ceil((relY + 1) / scaledPageHeight))
+      setCurrentPage(page)
+    }
+    document.addEventListener("selectionchange", handleSelectionChange)
+    return () => document.removeEventListener("selectionchange", handleSelectionChange)
+  }, [editorRef, zoom, orientation])
+
+  // Inject @media print CSS for pixel-perfect PDF output
+  useEffect(() => {
+    const styleId = "gauss-print-style"
+    let el = document.getElementById(styleId) as HTMLStyleElement | null
+    if (!el) {
+      el = document.createElement("style")
+      el.id = styleId
+      document.head.appendChild(el)
+    }
+    const marginValue = margins === "narrow" ? "0.5in 0.75in" : margins === "wide" ? "1.25in 1.5in" : "1.0in 1.25in"
+    const pageSizeStr = pageSize === "Letter" ? "letter" : pageSize === "Legal" ? "legal" : "A4"
+    const orientStr = orientation === "Landscape" ? "landscape" : "portrait"
+    el.textContent = `
+      @media print {
+        @page {
+          size: ${pageSizeStr} ${orientStr};
+          margin: ${marginValue};
+        }
+        body > *:not(#gauss-print-root) { display: none !important; }
+        #gauss-print-root { display: block !important; }
+        nav, aside, header, footer, [data-no-print], .no-print { display: none !important; }
+        #editor-paper-container {
+          box-shadow: none !important;
+          border: none !important;
+          width: 100% !important;
+          min-height: unset !important;
+          padding: ${marginValue} !important;
+          background-color: ${pageColor} !important;
+        }
+        #editor-content { zoom: 100% !important; font-size: 11pt; }
+        .gauss-print-header {
+          position: fixed;
+          top: 0; left: 0; right: 0;
+          font-size: 8pt;
+          font-family: monospace;
+          color: #71717a;
+          display: flex;
+          justify-content: space-between;
+          padding: 0 1in 4pt;
+          border-bottom: 1px solid #e5e7eb;
+        }
+        .gauss-print-footer {
+          position: fixed;
+          bottom: 0; left: 0; right: 0;
+          font-size: 8pt;
+          font-family: monospace;
+          color: #71717a;
+          display: flex;
+          justify-content: space-between;
+          padding: 4pt 1in 0;
+          border-top: 1px solid #e5e7eb;
+        }
+        .gauss-print-footer .page-num::after {
+          content: counter(page);
+        }
+        .gauss-print-footer .page-total::after {
+          content: counter(pages);
+        }
+        .google-docs-page-break { page-break-after: always; display: block; }
+        .google-docs-comment-highlight { background-color: transparent !important; text-decoration: none !important; }
+        .google-docs-spell-error { text-decoration: none !important; }
+      }
+    `
+    return () => { el?.remove() }
+  }, [margins, pageSize, orientation, pageColor])
+
   // Redaction click handler
   const handleRedactClick = (e: React.MouseEvent) => {
     if (!redactMode) return
@@ -822,7 +925,16 @@ export default function WordEditor({
   ], [exec, triggerImportFile, handleExport, setModalOpen, triggerImageUpload, setShowTablePicker, showTablePicker, setShowPageNumbers, showPageNumbers, headerText, footerText, setShowOutlineSidebar, showOutlineSidebar, setShowWordCountFloat, showWordCountFloat, setEditorTheme, clearFormatting, translateDoc])
 
   return (
-    <div className={`flex flex-col w-full h-full select-none ${editorTheme === 'light' ? 'bg-[#f8f9fa] text-zinc-800' : 'bg-zinc-950 text-zinc-100'}`}>
+    <div id="gauss-print-root" className={`flex flex-col w-full h-full select-none ${editorTheme === 'light' ? 'bg-[#f8f9fa] text-zinc-800' : 'bg-zinc-950 text-zinc-100'}`}>
+      {/* Hidden print-only header/footer (visible only in @media print) */}
+      <div className="gauss-print-header" style={{ display: 'none' }}>
+        <span>{headerText.toUpperCase()}</span>
+        <span>{docTitle}</span>
+      </div>
+      <div className="gauss-print-footer" style={{ display: 'none' }}>
+        <span>{footerText}</span>
+        <span>Page <span className="page-num" /> of <span className="page-total" /></span>
+      </div>
       
       {/* 1. GOOGLE DOCS HEADER / TITLE BAR */}
       <div className="flex justify-between items-center px-4 py-2 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
@@ -1321,7 +1433,7 @@ export default function WordEditor({
         )}
 
         {/* Scrollable Container */}
-        <div className="flex-1 overflow-auto py-8 px-4 flex justify-center relative bg-[#f8f9fa] dark:bg-zinc-950">
+        <div className={`flex-1 overflow-auto py-8 px-4 flex justify-center relative ${editorTheme === 'light' ? 'bg-[#e8eaed]' : 'bg-zinc-950'}`}>
           
           <div className="flex flex-col items-center gap-6 min-h-max max-w-full relative">
             
@@ -1331,20 +1443,20 @@ export default function WordEditor({
               <span>Double click menu to edit</span>
             </div>
 
-            {/* Paper Container */}
+            {/* Paper Container — always white-based background */}
             <div
               id="editor-paper-container"
               onClick={handleEditorClickOrSelect}
-              className={`relative transition-all duration-200 select-text rounded border shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.6)] ${
-                editorTheme === 'light' 
-                  ? 'bg-white border-zinc-200 text-zinc-800' 
-                  : 'bg-zinc-900 border-zinc-800 text-zinc-100'
+              className={`relative transition-all duration-200 select-text rounded border ${
+                editorTheme === 'light'
+                  ? 'shadow-[0_4px_16px_rgba(0,0,0,0.12)] border-zinc-200 text-zinc-800'
+                  : 'shadow-[0_4px_24px_rgba(0,0,0,0.7)] border-zinc-700 text-zinc-100'
               }`}
               style={{
                 width: orientation === "Portrait" ? `${620 * (zoom / 100)}px` : `${860 * (zoom / 100)}px`,
                 minHeight: orientation === "Portrait" ? `${880 * (zoom / 100)}px` : `${620 * (zoom / 100)}px`,
                 padding: getPaddingStyle(),
-                backgroundColor: editorTheme === 'light' ? pageColor : undefined
+                backgroundColor: pageColor
               }}
             >
               {/* Watermark */}
@@ -1412,7 +1524,7 @@ export default function WordEditor({
             {/* Footer text */}
             <div className="w-full flex justify-between px-6 text-[10px] text-zinc-400 font-mono tracking-widest uppercase select-none border-t border-dashed border-zinc-200 dark:border-zinc-800 pt-1.5 mb-8">
               <span>Footer: {footerText}</span>
-              {showPageNumbers && <span>Page 1 of ~{passedPageCount}</span>}
+              {showPageNumbers && <span>Page {currentPage} of {passedPageCount}</span>}
             </div>
 
           </div>
