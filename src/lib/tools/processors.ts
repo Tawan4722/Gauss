@@ -77,7 +77,7 @@ const writeWrappedText = (page: PDFPage, text: string, font: Awaited<ReturnType<
 };
 
 
-export const processTool = async (tool: Tool, files: File[], settings: ToolSettings): Promise<ToolProcessResult> => {
+export const processTool = async (tool: Tool, files: File[], settings: ToolSettings, config?: any): Promise<ToolProcessResult> => {
   // 1. Password Protection (Protect PDF)
   if (tool.id === "protect-pdf") {
     if (files.length === 0) throw new Error("Please upload at least one PDF to protect.");
@@ -505,16 +505,21 @@ export const processTool = async (tool: Tool, files: File[], settings: ToolSetti
     const italicFont = await pdf.embedFont(StandardFonts.HelveticaOblique);
     if (pages.length > 0) {
       const page = pages[pages.length - 1]; // Sign last page
-      page.drawText("Authorized Sign", {
-        x: 100,
-        y: 80,
-        size: 10,
+      const sx = config?.signatureX !== undefined ? config.signatureX : 100;
+      const sy = config?.signatureY !== undefined ? config.signatureY : 80;
+      const scale = config?.signatureScale !== undefined ? config.signatureScale : 1.0;
+      const sigStr = config?.signatureText || "Authorized Sign";
+
+      page.drawText(sigStr, {
+        x: sx + 10,
+        y: sy,
+        size: 9 * scale,
         font: italicFont,
         color: rgb(0.13, 0.5, 0.8)
       });
       page.drawLine({
-        start: { x: 90, y: 92 },
-        end: { x: 210, y: 92 },
+        start: { x: sx, y: sy + 12 },
+        end: { x: sx + 120 * scale, y: sy + 12 },
         thickness: 0.8,
         color: rgb(0.13, 0.5, 0.8)
       });
@@ -585,12 +590,48 @@ export const processTool = async (tool: Tool, files: File[], settings: ToolSetti
   }
 
   if (tool.id === "watermark-pdf") {
-    const pdf = await PDFDocument.create();
-    for (const file of files) {
-      await copyPdfPages(pdf, file);
+    if (files.length === 0) throw new Error("Upload a PDF file to watermark.");
+    const pdf = await PDFDocument.load(await files[0].arrayBuffer());
+    const pages = pdf.getPages();
+    const boldFont = await pdf.embedFont(StandardFonts.HelveticaBold);
+    const textFont = await pdf.embedFont(StandardFonts.Helvetica);
+    
+    const watermarkStr = config?.watermarkText || getString(settings, "watermarkText", "DRAFT");
+    const wSize = config?.watermarkSize || getNumber(settings, "watermarkSize", 60);
+    const wOpacity = config?.watermarkOpacity || getNumber(settings, "watermarkOpacity", 0.15);
+    const useObjectStreams = getBoolean(settings, "linearize", true);
+    
+    const wx = config?.watermarkX !== undefined ? config.watermarkX : 150;
+    const wy = config?.watermarkY !== undefined ? config.watermarkY : 400;
+
+    for (const page of pages) {
+      page.drawText(watermarkStr, {
+        x: wx,
+        y: wy,
+        size: wSize,
+        font: boldFont,
+        color: rgb(0.7, 0.7, 0.7),
+        opacity: wOpacity,
+        rotate: degrees(-30)
+      });
+      
+      if (config?.showBates) {
+        const batesStr = `BATES-${String(config.batesStart || 101).padStart(6, "0")}`;
+        page.drawText(batesStr, {
+          x: config.batesX || 450,
+          y: config.batesY || 36,
+          size: config.batesFontSize || 10,
+          font: textFont,
+          color: rgb(0.1, 0.1, 0.1)
+        });
+      }
     }
-    const bytes = await pdf.save();
-    return { summary: "Watermark layers stamped.", outputs: [await createOutput("watermarked.pdf", pdfBytesToBlob(bytes), "Watermarked successfully.")] };
+    
+    const bytes = await pdf.save({ useObjectStreams });
+    return {
+      summary: "Watermark layers stamped.",
+      outputs: [await createOutput(`${baseNameOf(files[0].name)}-watermarked.pdf`, pdfBytesToBlob(bytes), "Watermarked successfully.")]
+    };
   }
 
   // Fallback default process tool output

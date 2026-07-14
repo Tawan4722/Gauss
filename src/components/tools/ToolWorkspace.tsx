@@ -10,6 +10,7 @@ import {
 import WordEditor from "./WordEditor"
 import { toolRegistry, type ToolSettings } from "@/lib/tools/registry"
 import { processTool, type ToolOutput } from "@/lib/tools/processors"
+import LayoutSandbox, { type SandboxConfig } from "./LayoutSandbox"
 
 // Templates for Local Documents Explorer
 const DOCUMENT_TEMPLATES = [
@@ -73,6 +74,26 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
   const [processing, setProcessing] = useState(false)
   const [outputs, setOutputs] = useState<ToolOutput[]>([])
   const [processLog, setProcessLog] = useState("")
+
+  // Interactive layout sandbox editor state
+  const [sandboxOpen, setSandboxOpen] = useState(false)
+  const [sandboxConfig, setSandboxConfig] = useState<SandboxConfig>({
+    watermarkText: "DRAFT",
+    watermarkX: 180,
+    watermarkY: 420,
+    watermarkSize: 64,
+    watermarkOpacity: 0.15,
+    signatureText: "Authorized Signatory",
+    signatureX: 380,
+    signatureY: 100,
+    signatureScale: 1.0,
+    batesX: 450,
+    batesY: 36,
+    batesFontSize: 10,
+    showBates: false,
+    showWatermark: true,
+    showSignature: false,
+  })
 
   // Interactive signature drawing pad modal state
   const [sigModalOpen, setSigModalOpen] = useState(false)
@@ -276,6 +297,57 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
     }
   }
 
+  // Web Worker execution function
+  const executeInWorker = (toolId: string, files: File[], settings: ToolSettings, config?: any): Promise<ToolOutput[]> => {
+    return new Promise((resolve, reject) => {
+      try {
+        const worker = new Worker(new URL("../../workers/pdf.worker.ts", import.meta.url))
+        
+        worker.onmessage = async (e) => {
+          if (e.data.success) {
+            const outBlob = new Blob([e.data.buffer], { type: "application/pdf" })
+            const name = toolId === "merge-pdf" ? "merged.pdf" 
+                         : toolId === "split-pdf" ? "split.pdf"
+                         : toolId === "watermark-pdf" ? "watermarked.pdf"
+                         : "processed.pdf"
+            const output: ToolOutput = {
+              id: crypto.randomUUID(),
+              name,
+              type: outBlob.type,
+              size: outBlob.size,
+              blob: outBlob,
+              message: `Completed via background worker. ${e.data.pageCount || 1} pages.`
+            }
+            resolve([output])
+          } else {
+            reject(new Error(e.data.error || "Worker processing error"))
+          }
+          worker.terminate()
+        }
+        
+        worker.onerror = (err) => {
+          reject(err)
+          worker.terminate()
+        }
+        
+        Promise.all(files.map(async f => {
+          const buf = await f.arrayBuffer()
+          return { name: f.name, type: f.type, buffer: buf }
+        })).then(serialized => {
+          const transferables = serialized.map(s => s.buffer)
+          worker.postMessage({
+            files: serialized,
+            toolId,
+            settings,
+            config
+          }, transferables)
+        }).catch(reject)
+      } catch (err) {
+        reject(err)
+      }
+    })
+  }
+
   // 7. Execute PDF Action (Local Processing)
   const handleExecuteAction = async () => {
     setProcessing(true)
@@ -291,25 +363,59 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
         return
       }
 
-      const result = await processTool(activeTool, finalFiles, {
-        ...toolSettings,
-        watermarkText
-      })
+      let resultOutputs: ToolOutput[] = []
+      let summary = ""
+      
+      const isPdfWorkerTool = [
+        "merge-pdf", "split-pdf", "rotate-pdf", "crop-pdf",
+        "compress-pdf", "protect-pdf", "unlock-pdf", "watermark-pdf", "sign-pdf"
+      ].includes(activeToolId)
 
-      setOutputs(result.outputs)
-      setProcessLog(`COMPLETED: ${result.summary}`)
+      if (isPdfWorkerTool && typeof window !== "undefined" && window.Worker) {
+        setProcessLog("Offloading intensive task to local background thread...")
+        try {
+          const workerConfig = {
+            ...sandboxConfig,
+            watermarkText: watermarkText || sandboxConfig.watermarkText,
+            showWatermark: activeToolId === "watermark-pdf" ? true : sandboxConfig.showWatermark,
+            showSignature: activeToolId === "sign-pdf" ? true : sandboxConfig.showSignature,
+            showBates: activeToolId === "bates-pdf" ? true : sandboxConfig.showBates,
+          }
+          resultOutputs = await executeInWorker(activeToolId, finalFiles, toolSettings, workerConfig)
+          summary = `${activeTool.name} completed successfully on Web Worker thread.`
+        } catch (workerErr) {
+          console.warn("Background thread failed, falling back to main UI thread...", workerErr)
+          setProcessLog("Worker failed, falling back to main UI thread...")
+          const result = await processTool(activeTool, finalFiles, {
+            ...toolSettings,
+            watermarkText
+          }, sandboxConfig)
+          resultOutputs = result.outputs
+          summary = result.summary
+        }
+      } else {
+        const result = await processTool(activeTool, finalFiles, {
+          ...toolSettings,
+          watermarkText
+        }, sandboxConfig)
+        resultOutputs = result.outputs
+        summary = result.summary
+      }
+
+      setOutputs(resultOutputs)
+      setProcessLog(`COMPLETED: ${summary}`)
       
       // If converted PDF to Word, parse text content back to Word editor
-      if (activeToolId === "pdf-to-word" && result.outputs.length > 0) {
-        const text = await result.outputs[0].blob.text()
+      if (activeToolId === "pdf-to-word" && resultOutputs.length > 0) {
+        const text = await resultOutputs[0].blob.text()
         if (editorRef.current) {
-          editorRef.current.innerHTML = `<h1>Converted PDF Content</h1><p style="color:#22d3ee;font-weight:bold;">Successfully imported from ${result.outputs[0].name}</p><div style="margin-top:16px;">${text}</div>`
+          editorRef.current.innerHTML = `<h1>Converted PDF Content</h1><p style="color:#22d3ee;font-weight:bold;">Successfully imported from ${resultOutputs[0].name}</p><div style="margin-top:16px;">${text}</div>`
           updateStats()
         }
       }
 
       // If workflow chains, mirror backup
-      triggerSyncMirror(result.outputs.map(o => o.name))
+      triggerSyncMirror(resultOutputs.map(o => o.name))
 
     } catch (e) {
       setProcessLog(`ERROR: ${(e as Error)?.message || "Execution failed."}`)
@@ -904,6 +1010,21 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
               </div>
             )}
 
+            {/* Visual Coordinate Layout Sandbox Button */}
+            {(activeToolId === "watermark-pdf" || activeToolId === "sign-pdf") && (
+              <div className="border-t border-zinc-900 pt-3 space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block">Preflight Placement Sandbox</span>
+                <button
+                  type="button"
+                  onClick={() => setSandboxOpen(true)}
+                  className="w-full flex items-center justify-center gap-1.5 py-2 border border-dashed border-cyan-500/20 bg-cyan-500/5 hover:bg-cyan-500/10 text-cyan-300 text-xs font-bold uppercase tracking-wider rounded-xl transition"
+                >
+                  <Minimize className="h-4 w-4 rotate-45 text-cyan-450" />
+                  <span>Configure Visual Layout</span>
+                </button>
+              </div>
+            )}
+
             {/* Special Action: Electronic Signatures Pad Button */}
             {activeToolId === "sign-pdf" && (
               <div className="border-t border-zinc-900 pt-3 space-y-2">
@@ -1083,6 +1204,18 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
           </div>
         </div>
       )}
+
+      {/* Layout Sandbox coordinates visual editor */}
+      <LayoutSandbox
+        isOpen={sandboxOpen}
+        onClose={() => setSandboxOpen(false)}
+        onSave={(newConfig) => setSandboxConfig(newConfig)}
+        initialConfig={{
+          ...sandboxConfig,
+          watermarkText: watermarkText || sandboxConfig.watermarkText
+        }}
+        pageCount={uploadedFiles.length || 1}
+      />
 
     </div>
   )
