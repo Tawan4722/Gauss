@@ -7,7 +7,8 @@ import {
   FileText, Settings, HelpCircle, FileDown, PlusCircle, Scissors,
   Type, Palette, ClipboardList, Info, Calendar, Milestone,
   Printer, CheckSquare, Paintbrush, Search, Share, User, Star, Cloud, MessageSquare, Check, X,
-  ChevronDown, ChevronRight, Keyboard, Languages, BookOpen, Settings2
+  ChevronDown, ChevronRight, Keyboard, Languages, BookOpen, Settings2,
+  Code, Eye, LayoutGrid
 } from "lucide-react"
 import { exportToDocx } from "@/lib/tools/docxExporter"
 import { importFromDocx } from "@/lib/tools/docxParser"
@@ -198,14 +199,32 @@ export default function WordEditor({
     shortcuts: boolean
     spellcheck: boolean
     findReplace: boolean
+    seoSettings: boolean
   }>({
     share: false,
     pageSetup: false,
     wordCount: false,
     shortcuts: false,
     spellcheck: false,
-    findReplace: false
+    findReplace: false,
+    seoSettings: false
   })
+
+  // Website Editor Mode states
+  const [layoutMode, setLayoutMode] = useState<"print" | "web">("print")
+  const [viewMode, setViewMode] = useState<"visual" | "code">("visual")
+  const [htmlCode, setHtmlCode] = useState("")
+  const [webBgColor, setWebBgColor] = useState("#ffffff")
+  const [webBgGradient, setWebBgGradient] = useState("")
+  const [seoMetadata, setSeoMetadata] = useState({
+    title: "Gauss Created Web Page",
+    description: "This page was built locally using Gauss Document Studio offline editor.",
+    keywords: "offline, local-first, web builder, gauss",
+    author: "Local Collaborator"
+  })
+
+  // Toolbar dropdown menus
+  const [showWebMenu, setShowWebMenu] = useState(false)
 
   // Find & Replace
   const [findText, setFindText] = useState("")
@@ -555,6 +574,137 @@ export default function WordEditor({
     }
   }
 
+  const formatHtmlContent = () => {
+    try {
+      let html = htmlCode
+      // simple HTML formatting
+      let formatted = ""
+      let indent = 0
+      const reg = /(>)(<)(\/*)/g
+      html = html.replace(reg, '$1\r\n$2$3')
+      
+      const lines = html.split('\r\n')
+      lines.forEach(line => {
+        let indentOffset = 0
+        const isClosing = line.match(/^<\/\w/)
+        const isSelfClosing = line.match(/<[^>]*\/>/)
+        const isOpening = line.match(/^<\w[^>]*[^\/]>.*$/) && !line.match(/.+<\/\w[^>]*>$/) && !isSelfClosing
+
+        if (isClosing) {
+          indent = Math.max(0, indent - 1)
+        } else if (isOpening) {
+          indentOffset = 1
+        }
+        
+        formatted += "  ".repeat(indent) + line.trim() + "\n"
+        indent += indentOffset
+      })
+      setHtmlCode(formatted.trim())
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  // Web Element Inserts
+  const insertWebButton = () => {
+    const text = window.prompt("Button Text:", "Click Here")
+    if (!text) return
+    const url = window.prompt("Button URL:", "https://")
+    if (!url) return
+    const bg = window.prompt("Button Background Color (Hex or name):", "#2563eb")
+    if (!bg) return
+    
+    editorRef.current?.focus()
+    const html = `<a href="${url}" target="_blank" style="display:inline-block;padding:12px 24px;background-color:${bg};color:#ffffff;text-decoration:none;font-weight:bold;border-radius:8px;margin:8px 0;transition:all 0.2s ease-in-out;text-align:center;" class="web-btn">${text}</a><p><br></p>`
+    document.execCommand("insertHTML", false, html)
+  }
+
+  const insertHeroSection = () => {
+    editorRef.current?.focus()
+    const html = `<div style="background:linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);color:#ffffff;padding:48px 32px;border-radius:12px;text-align:center;margin:16px 0;" class="web-hero">
+      <h1 style="font-size:28pt;font-weight:bold;margin:0 0 12px;color:#ffffff;border:none;padding:0;">Create Visual Masterpieces</h1>
+      <p style="font-size:12pt;margin:0 0 24px;color:#dbeafe;max-width:600px;margin-left:auto;margin-right:auto;">Draft pages offline using modular layouts and customize details instantly.</p>
+      <a href="#" style="display:inline-block;padding:10px 20px;background-color:#ffffff;color:#1e3a8a;text-decoration:none;font-weight:bold;border-radius:6px;transition:all 0.2s;" class="web-btn">Get Started</a>
+    </div><p><br></p>`
+    document.execCommand("insertHTML", false, html)
+  }
+
+  const insertWebGrid = (cols: number) => {
+    editorRef.current?.focus()
+    let colsHtml = ""
+    for (let i = 1; i <= cols; i++) {
+      colsHtml += `
+      <div style="flex:1;min-width:200px;border:1px solid #e5e7eb;padding:16px;border-radius:8px;box-sizing:border-box;" class="web-col">
+        <h3 style="font-size:14pt;font-weight:bold;margin-top:0;color:#0f172a;">Column ${i}</h3>
+        <p style="font-size:10.5pt;color:#4b5563;margin-bottom:0;">Add descriptions or lists of items here. You can insert text, images, or buttons.</p>
+      </div>`
+    }
+    const html = `<div style="display:flex;gap:16px;margin:16px 0;flex-wrap:wrap;" class="web-grid">${colsHtml}</div><p><br></p>`
+    document.execCommand("insertHTML", false, html)
+  }
+
+  const insertNavBar = () => {
+    editorRef.current?.focus()
+    const html = `<nav style="display:flex;justify-content:space-between;align-items:center;padding:16px 24px;background-color:#1e293b;color:#ffffff;border-radius:8px;margin:16px 0;flex-wrap:wrap;gap:12px;" class="web-nav">
+      <div style="font-weight:bold;font-size:14pt;color:#ffffff;">GaussApp</div>
+      <div style="display:flex;gap:16px;">
+        <a href="#features" style="color:#ffffff;text-decoration:none;font-size:10pt;">Features</a>
+        <a href="#about" style="color:#ffffff;text-decoration:none;font-size:10pt;">About</a>
+        <a href="#contact" style="color:#ffffff;text-decoration:none;font-size:10pt;">Contact</a>
+      </div>
+    </nav><p><br></p>`
+    document.execCommand("insertHTML", false, html)
+  }
+
+  const insertFeatureCards = () => {
+    editorRef.current?.focus()
+    const html = `<div style="display:flex;gap:16px;margin:24px 0;flex-wrap:wrap;" class="web-features">
+      <div style="flex:1;min-width:200px;background-color:#f8fafc;padding:20px;border-radius:10px;border:1px solid #f1f5f9;text-align:center;box-sizing:border-box;">
+        <div style="font-size:24pt;margin-bottom:8px;">🔒</div>
+        <h4 style="font-weight:bold;font-size:12pt;margin:0 0 8px;color:#0f172a;">Offline First</h4>
+        <p style="font-size:9.5pt;color:#64748b;margin:0;">All data stays on your local machine. No external transmissions.</p>
+      </div>
+      <div style="flex:1;min-width:200px;background-color:#f8fafc;padding:20px;border-radius:10px;border:1px solid #f1f5f9;text-align:center;box-sizing:border-box;">
+        <div style="font-size:24pt;margin-bottom:8px;">⚡</div>
+        <h4 style="font-weight:bold;font-size:12pt;margin:0 0 8px;color:#0f172a;">Super Fast</h4>
+        <p style="font-size:9.5pt;color:#64748b;margin:0;">Optimized build speed in browser workers for zero lag.</p>
+      </div>
+      <div style="flex:1;min-width:200px;background-color:#f8fafc;padding:20px;border-radius:10px;border:1px solid #f1f5f9;text-align:center;box-sizing:border-box;">
+        <div style="font-size:24pt;margin-bottom:8px;">🎨</div>
+        <h4 style="font-weight:bold;font-size:12pt;margin:0 0 8px;color:#0f172a;">Responsive</h4>
+        <p style="font-size:9.5pt;color:#64748b;margin:0;">Fits beautifully on desktops, tablets, and phones.</p>
+      </div>
+    </div><p><br></p>`
+    document.execCommand("insertHTML", false, html)
+  }
+
+  const insertContactForm = () => {
+    editorRef.current?.focus()
+    const html = `<form style="max-width:480px;margin:24px auto;padding:24px;border:1px solid #e2e8f0;border-radius:12px;background-color:#ffffff;text-align:left;" onsubmit="event.preventDefault(); alert('Form submitted locally (offline mode).');" class="web-form" contenteditable="false">
+      <h3 style="margin-top:0;margin-bottom:16px;font-size:14pt;font-weight:bold;color:#1e293b;text-align:center;">Contact Us</h3>
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:9pt;font-weight:bold;color:#475569;margin-bottom:4px;">Full Name</label>
+        <input type="text" placeholder="John Doe" style="width:100%;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:10pt;outline:none;box-sizing:border-box;" />
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:9pt;font-weight:bold;color:#475569;margin-bottom:4px;">Email Address</label>
+        <input type="email" placeholder="john@example.com" style="width:100%;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:10pt;outline:none;box-sizing:border-box;" />
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:9pt;font-weight:bold;color:#475569;margin-bottom:4px;">Message</label>
+        <textarea placeholder="Write your message here..." style="width:100%;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:10pt;outline:none;height:80px;resize:vertical;box-sizing:border-box;"></textarea>
+      </div>
+      <button type="submit" style="width:100%;padding:10px 0;background-color:#2563eb;color:#ffffff;border:none;border-radius:6px;font-weight:bold;font-size:10pt;cursor:pointer;">Send Message</button>
+    </form><p><br></p>`
+    document.execCommand("insertHTML", false, html)
+  }
+
+  const insertWebDivider = () => {
+    editorRef.current?.focus()
+    const html = `<hr style="border:0;height:1px;background:linear-gradient(to right, rgba(0,0,0,0), rgba(148,163,184,0.5), rgba(0,0,0,0));margin:32px 0;" class="web-divider" /><p><br></p>`
+    document.execCommand("insertHTML", false, html)
+  }
+
   // Find & Replace actions
   const handleFind = () => {
     if (!findText) return
@@ -635,7 +785,8 @@ export default function WordEditor({
   }
 
   // Export
-  const handleExport = useCallback(async (format: "docx" | "pdf" | "html" | "md" | "txt") => {
+  // Export
+  const handleExport = useCallback(async (format: "docx" | "pdf" | "html" | "md" | "txt" | "zip") => {
     if (!editorRef.current) return
     const contentHtml = editorRef.current.innerHTML
     const contentText = editorRef.current.innerText
@@ -653,33 +804,296 @@ export default function WordEditor({
     } else if (format === "pdf") {
       window.print()
     } else if (format === "html") {
+      const isDarkThemeBg = webBgGradient?.includes("#0f172a") || webBgGradient?.includes("#1e1b4b") || webBgColor === "#0f172a" || webBgColor === "#121212"
+      const defaultColor = isDarkThemeBg ? "#f8fafc" : "#1e293b"
+      const defaultTitleColor = isDarkThemeBg ? "#ffffff" : "#0f172a"
+      const defaultBorderColor = isDarkThemeBg ? "#334155" : "#e2e8f0"
+
       const fullHtml = `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>${docTitle}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${seoMetadata.title}</title>
+  <meta name="description" content="${seoMetadata.description}">
+  <meta name="keywords" content="${seoMetadata.keywords}">
+  <meta name="author" content="${seoMetadata.author}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 20px; color: #111827; background-color: ${pageColor}; }
-    h1 { color: #1e3a8a; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; font-size: 24pt; }
-    h2 { color: #1e3a8a; font-size: 18pt; margin-top: 24px; }
-    h3 { color: #b45309; font-size: 14pt; }
-    table { border-collapse: collapse; width: 100%; margin: 24px 0; }
-    td, th { border: 1px solid #d1d5db; padding: 10px 14px; }
-    .google-docs-comment-highlight { background-color: transparent !important; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      color: ${defaultColor};
+      background-color: ${layoutMode === "web" ? webBgColor : pageColor};
+      background: ${layoutMode === "web" && webBgGradient ? webBgGradient : "none"};
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+    .web-root-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      box-sizing: border-box;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      color: ${defaultTitleColor};
+      margin-top: 1.5em;
+      margin-bottom: 0.5em;
+    }
+    p {
+      margin-top: 0;
+      margin-bottom: 1em;
+    }
+    a {
+      color: #2563eb;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 24px 0;
+    }
+    td, th {
+      border: 1px solid ${defaultBorderColor};
+      padding: 12px;
+      text-align: left;
+    }
+    th {
+      background-color: ${isDarkThemeBg ? "#1e293b" : "#f1f5f9"};
+      font-weight: bold;
+    }
+    .web-btn {
+      display: inline-block;
+      text-align: center;
+      transition: all 0.2s ease-in-out;
+      cursor: pointer;
+    }
+    .web-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+      filter: brightness(1.1);
+    }
+    .web-hero {
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+    .web-features div {
+      transition: transform 0.2s ease;
+    }
+    .web-features div:hover {
+      transform: translateY(-4px);
+    }
+    .web-form {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .web-form input, .web-form textarea {
+      transition: border-color 0.2s ease;
+    }
+    .web-form input:focus, .web-form textarea:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .google-docs-page-break {
+      display: none !important;
+    }
+    .google-docs-comment-highlight {
+      background-color: transparent !important;
+      color: inherit !important;
+    }
+    .google-docs-spell-error {
+      text-decoration: none !important;
+    }
   </style>
 </head>
 <body>
-  ${contentHtml}
+  <div class="web-root-container">
+    ${contentHtml}
+  </div>
 </body>
 </html>`
       downloadBlob(new Blob([fullHtml], { type: "text/html" }), `${docTitle}.html`)
+    } else if (format === "zip") {
+      try {
+        const JSZipClass = (await import("jszip")).default
+        const zip = new JSZipClass()
+        
+        const indexHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${seoMetadata.title}</title>
+  <meta name="description" content="${seoMetadata.description}">
+  <meta name="keywords" content="${seoMetadata.keywords}">
+  <meta name="author" content="${seoMetadata.author}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="web-root-container">
+    ${contentHtml}
+  </div>
+</body>
+</html>`
+
+        const isDarkThemeBg = webBgGradient?.includes("#0f172a") || webBgGradient?.includes("#1e1b4b") || webBgColor === "#0f172a" || webBgColor === "#121212"
+        const defaultColor = isDarkThemeBg ? "#f8fafc" : "#1e293b"
+        const defaultTitleColor = isDarkThemeBg ? "#ffffff" : "#0f172a"
+        const defaultBorderColor = isDarkThemeBg ? "#334155" : "#e2e8f0"
+
+        const styleCss = `/* Clean modern stylesheet generated by Gauss Website Editor */
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+  color: ${defaultColor};
+  background-color: ${layoutMode === "web" ? webBgColor : pageColor};
+  background: ${layoutMode === "web" && webBgGradient ? webBgGradient : "none"};
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+.web-root-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  box-sizing: border-box;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: ${defaultTitleColor};
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+p {
+  margin-top: 0;
+  margin-bottom: 1em;
+}
+
+a {
+  color: #2563eb;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 24px 0;
+}
+
+td, th {
+  border: 1px solid ${defaultBorderColor};
+  padding: 12px;
+  text-align: left;
+}
+
+th {
+  background-color: ${isDarkThemeBg ? "#1e293b" : "#f1f5f9"};
+  font-weight: bold;
+}
+
+/* Custom interactive blocks */
+.web-btn {
+  display: inline-block;
+  text-align: center;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+.web-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+  filter: brightness(1.1);
+}
+
+.web-hero {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.web-features div {
+  transition: transform 0.2s ease;
+}
+
+.web-features div:hover {
+  transform: translateY(-4px);
+}
+
+.web-form {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.web-form input, .web-form textarea {
+  transition: border-color 0.2s ease;
+}
+
+.web-form input:focus, .web-form textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.google-docs-page-break {
+  display: none !important;
+}
+
+.google-docs-comment-highlight {
+  background-color: transparent !important;
+  color: inherit !important;
+}
+
+.google-docs-spell-error {
+  text-decoration: none !important;
+}
+`
+
+        const readmeMd = `# ${docTitle}
+
+This website package was exported offline from **Gauss Document Studio**.
+
+## Folder Contents
+- \`index.html\` - The main webpage structure and text.
+- \`style.css\` - Responsive styling, layouts, and typography.
+
+## How to Run Locally
+Simply double-click \`index.html\` to open it in your browser.
+
+## How to Host
+You can host this website on free offline static hosting platforms such as:
+1. **GitHub Pages** (Upload these files to a GitHub repository).
+2. **Vercel** (Deploy using the Vercel CLI or Git integration).
+3. **Netlify** (Drag-and-drop the files into Netlify Drop).
+`
+
+        zip.file("index.html", indexHtml)
+        zip.file("style.css", styleCss)
+        zip.file("README.md", readmeMd)
+        
+        const zipBlob = await zip.generateAsync({ type: "blob" })
+        downloadBlob(zipBlob, `${docTitle}.zip`)
+        alert("Website ZIP Bundle generated and downloaded successfully!")
+      } catch (err) {
+        alert(`Error generating ZIP package: ${(err as Error)?.message || String(err)}`)
+      }
     } else if (format === "md") {
       const md = htmlToMarkdown(contentHtml)
       downloadBlob(new Blob([md], { type: "text/markdown" }), `${docTitle}.md`)
     } else {
       downloadBlob(new Blob([contentText], { type: "text/plain" }), `${docTitle}.txt`)
     }
-  }, [editorRef, pageSize, orientation, margins, watermarkText, headerText, footerText, docTitle, pageColor])
+  }, [editorRef, pageSize, orientation, margins, watermarkText, headerText, footerText, docTitle, pageColor, seoMetadata, layoutMode, webBgColor, webBgGradient])
 
 
 
@@ -853,10 +1267,12 @@ export default function WordEditor({
         { label: "Download DOCX", action: () => handleExport("docx") },
         { label: "Download PDF Print", action: () => handleExport("pdf") },
         { label: "Download Web HTML", action: () => handleExport("html") },
+        { label: "Download Website ZIP Bundle", action: () => handleExport("zip") },
         { label: "Download Markdown", action: () => handleExport("md") },
         { label: "Download Plain Text", action: () => handleExport("txt") },
         { label: "divider" },
         { label: "Page Setup...", action: () => setModalOpen(prev => ({ ...prev, pageSetup: true })) },
+        { label: "Web Page Settings (SEO)...", action: () => setModalOpen(prev => ({ ...prev, seoSettings: true })) },
         { label: "Print (Ctrl+P)", action: () => window.print() }
       ]
     },
@@ -872,7 +1288,8 @@ export default function WordEditor({
     {
       name: "View",
       items: [
-        { label: "Print Layout view", action: () => {} },
+        { label: "Print Layout view", action: () => { setLayoutMode("print"); setViewMode("visual") } },
+        { label: "Web Layout view", action: () => { setLayoutMode("web"); setViewMode("visual") } },
         { label: "Toggle Document Outline", action: () => setShowOutlineSidebar(!showOutlineSidebar) },
         { label: "Show Word Count while typing", action: () => setShowWordCountFloat(!showWordCountFloat) },
         { label: "divider" },
@@ -922,7 +1339,7 @@ export default function WordEditor({
         { label: "Help Guide", action: () => alert("Use standard menus and quick tool icons to structure documents, insert tables, and draft comments.") }
       ]
     }
-  ], [exec, triggerImportFile, handleExport, setModalOpen, triggerImageUpload, setShowTablePicker, showTablePicker, setShowPageNumbers, showPageNumbers, headerText, footerText, setShowOutlineSidebar, showOutlineSidebar, setShowWordCountFloat, showWordCountFloat, setEditorTheme, clearFormatting, translateDoc])
+  ], [exec, triggerImportFile, handleExport, setModalOpen, triggerImageUpload, setShowTablePicker, showTablePicker, setShowPageNumbers, showPageNumbers, headerText, footerText, setShowOutlineSidebar, showOutlineSidebar, setShowWordCountFloat, showWordCountFloat, setEditorTheme, clearFormatting, translateDoc, setLayoutMode, setViewMode])
 
   return (
     <div id="gauss-print-root" className={`flex flex-col w-full h-full select-none ${editorTheme === 'light' ? 'bg-[#f8f9fa] text-zinc-800' : 'bg-zinc-950 text-zinc-100'}`}>
@@ -959,6 +1376,42 @@ export default function WordEditor({
               <div className="flex items-center gap-1 text-[10px] text-zinc-400 font-mono bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full shrink-0">
                 <Cloud className="h-3 w-3 text-blue-500" />
                 <span>Saved Offline</span>
+              </div>
+              <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-0.5 border border-zinc-200 dark:border-zinc-700 shrink-0 ml-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (viewMode === "code" && editorRef.current) {
+                      editorRef.current.innerHTML = htmlCode
+                    }
+                    setViewMode("visual")
+                  }}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold transition flex items-center gap-1 ${
+                    viewMode === "visual"
+                      ? "bg-white dark:bg-zinc-900 shadow text-blue-600 dark:text-cyan-400"
+                      : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                  }`}
+                >
+                  <Eye className="h-3 w-3" />
+                  <span>Visual</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (viewMode === "visual" && editorRef.current) {
+                      setHtmlCode(editorRef.current.innerHTML)
+                    }
+                    setViewMode("code")
+                  }}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold transition flex items-center gap-1 ${
+                    viewMode === "code"
+                      ? "bg-white dark:bg-zinc-900 shadow text-blue-600 dark:text-cyan-400"
+                      : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                  }`}
+                >
+                  <Code className="h-3 w-3" />
+                  <span>Code</span>
+                </button>
               </div>
             </div>
 
@@ -1405,6 +1858,88 @@ export default function WordEditor({
           )}
         </div>
 
+        {/* Web Elements dropdown */}
+        <div className="relative">
+          <button
+            title="Web Elements"
+            onClick={() => {
+              setShowWebMenu(!showWebMenu)
+              setShowTablePicker(false)
+              setShowStyleMenu(false)
+              setShowFontMenu(false)
+              setShowSizeMenu(false)
+              setShowAlignMenu(false)
+              setShowSpacingMenu(false)
+            }}
+            className={`p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-650 ${
+              layoutMode === "web" ? "text-cyan-500 bg-cyan-500/5 border border-cyan-500/20" : ""
+            }`}
+          >
+            <LayoutGrid className="h-3.5 w-3.5 text-blue-600 dark:text-cyan-400" />
+          </button>
+          {showWebMenu && (
+            <div className="absolute z-50 mt-1 p-2 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-xl select-none w-48 font-sans text-xs flex flex-col gap-1">
+              <div className="font-bold text-zinc-400 mb-1 px-2.5 uppercase text-[9px] tracking-wider">Web Component blocks</div>
+              <button
+                type="button"
+                onClick={() => { setShowWebMenu(false); insertNavBar() }}
+                className="w-full text-left px-2.5 py-1.5 rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 transition text-zinc-700 dark:text-zinc-300 font-semibold"
+              >
+                🌐 Navigation Bar
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowWebMenu(false); insertHeroSection() }}
+                className="w-full text-left px-2.5 py-1.5 rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 transition text-zinc-700 dark:text-zinc-300 font-semibold"
+              >
+                ✨ Hero Banner Section
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowWebMenu(false); insertWebGrid(2) }}
+                className="w-full text-left px-2.5 py-1.5 rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 transition text-zinc-700 dark:text-zinc-300 font-semibold"
+              >
+                📊 2-Column Grid Layout
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowWebMenu(false); insertWebGrid(3) }}
+                className="w-full text-left px-2.5 py-1.5 rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 transition text-zinc-700 dark:text-zinc-300 font-semibold"
+              >
+                📊 3-Column Grid Layout
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowWebMenu(false); insertFeatureCards() }}
+                className="w-full text-left px-2.5 py-1.5 rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 transition text-zinc-700 dark:text-zinc-300 font-semibold"
+              >
+                🗂️ 3-Card Features Block
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowWebMenu(false); insertWebButton() }}
+                className="w-full text-left px-2.5 py-1.5 rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 transition text-zinc-700 dark:text-zinc-300 font-semibold"
+              >
+                🔘 Interactive CTA Button
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowWebMenu(false); insertContactForm() }}
+                className="w-full text-left px-2.5 py-1.5 rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 transition text-zinc-700 dark:text-zinc-300 font-semibold"
+              >
+                📝 Interactive Contact Form
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowWebMenu(false); insertWebDivider() }}
+                className="w-full text-left px-2.5 py-1.5 rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 transition text-zinc-700 dark:text-zinc-300 font-semibold"
+              >
+                ➖ Web Styled Divider
+              </button>
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* 3. MAIN EDITOR CANVAS */}
@@ -1438,97 +1973,131 @@ export default function WordEditor({
           <div className="flex flex-col items-center gap-6 min-h-max max-w-full relative">
             
             {/* Header text */}
-            <div className="w-full flex justify-between px-6 text-[10px] text-zinc-400 font-mono tracking-widest uppercase select-none border-b border-dashed border-zinc-200 dark:border-zinc-800 pb-1.5">
-              <span>Header: {headerText}</span>
-              <span>Double click menu to edit</span>
-            </div>
+            {layoutMode === "print" && (
+              <div className="w-full flex justify-between px-6 text-[10px] text-zinc-400 font-mono tracking-widest uppercase select-none border-b border-dashed border-zinc-200 dark:border-zinc-800 pb-1.5 animate-in fade-in duration-150">
+                <span>Header: {headerText}</span>
+                <span>Double click menu to edit</span>
+              </div>
+            )}
 
-            {/* Paper Container — always white-based background */}
-            <div
-              id="editor-paper-container"
-              onClick={handleEditorClickOrSelect}
-              className={`relative transition-all duration-200 select-text rounded border ${
-                editorTheme === 'light'
-                  ? 'shadow-[0_4px_16px_rgba(0,0,0,0.12)] border-zinc-200 text-zinc-800'
-                  : 'shadow-[0_4px_24px_rgba(0,0,0,0.7)] border-zinc-700 text-zinc-100'
-              }`}
-              style={{
-                width: orientation === "Portrait" ? `${620 * (zoom / 100)}px` : `${860 * (zoom / 100)}px`,
-                minHeight: orientation === "Portrait" ? `${880 * (zoom / 100)}px` : `${620 * (zoom / 100)}px`,
-                padding: getPaddingStyle(),
-                backgroundColor: pageColor
-              }}
-            >
-              {/* Watermark */}
-              {watermarkText && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden opacity-[0.03] z-0">
-                  <span className="font-black select-none transform -rotate-30 tracking-widest text-center uppercase text-[7vw] text-blue-500">
-                    {watermarkText}
-                  </span>
-                </div>
-              )}
-
-              {/* Spelling popup */}
-              {spellPopover.visible && (
-                <div 
-                  className="absolute z-50 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 p-2.5 rounded-lg shadow-xl w-44 font-sans text-xs flex flex-col gap-1.5 text-zinc-850 dark:text-zinc-200 select-none animate-in fade-in zoom-in-95 duration-100"
-                  style={{ left: `${spellPopover.x}px`, top: `${spellPopover.y}px`, transform: 'translateX(-50%)' }}
-                >
-                  <div className="text-[10px] text-zinc-450 font-bold uppercase tracking-wider">Suggested Spelling:</div>
-                  <div className="flex flex-col gap-1">
-                    {spellPopover.suggestions.map((s, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => applySpellCorrection(s)}
-                        className="w-full text-left px-2 py-1 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 transition font-bold"
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="h-px bg-zinc-150 dark:bg-zinc-800 my-0.5" />
-                  <div className="flex gap-2 justify-between">
-                    <button onClick={ignoreSpellCheck} className="text-zinc-450 hover:text-zinc-700 dark:hover:text-zinc-300 font-bold text-[10px]">Ignore</button>
-                    <button onClick={ignoreSpellCheck} className="text-zinc-450 hover:text-zinc-700 font-bold text-[10px]">Add to Dict</button>
-                  </div>
-                </div>
-              )}
-
-              {/* Content Editable Area */}
+            {viewMode === "code" ? (
               <div
-                ref={editorRef}
-                id="editor-content"
-                contentEditable
-                suppressContentEditableWarning
-                onClick={handleRedactClick}
-                onInput={() => {
-                  buildOutline()
-                  if(spellCheckEnabled) runSpellCheck()
-                }}
-                className="outline-none w-full h-full relative z-10 selection:bg-blue-100 dark:selection:bg-blue-950/30 min-h-[700px] leading-relaxed"
+                className="relative transition-all duration-200 rounded-xl border border-zinc-350 dark:border-zinc-800 bg-[#050605] text-[#22d3ee] flex flex-col overflow-hidden shadow-2xl animate-in fade-in duration-150"
                 style={{
-                  fontFamily: "var(--font-geist-sans), Arial, sans-serif",
-                  fontSize: "11pt",
-                  zoom: `${zoom}%`
+                  width: layoutMode === "web" ? "100%" : (orientation === "Portrait" ? `${620 * (zoom / 100)}px` : `${860 * (zoom / 100)}px`),
+                  maxWidth: layoutMode === "web" ? "1000px" : undefined,
+                  minHeight: "600px",
                 }}
-                onPaste={(e) => {
-                  const text = e.clipboardData.getData("text/plain")
-                  if (text) {
-                    e.preventDefault()
-                    document.execCommand("insertText", false, text)
-                  }
+              >
+                <div className="flex justify-between items-center bg-zinc-900 border-b border-zinc-800 px-4 py-2.5 text-xs">
+                  <span className="font-mono text-zinc-400">📄 HTML Source Editor (Changes Sync on Visual Tab)</span>
+                  <button
+                    onClick={formatHtmlContent}
+                    className="px-3 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white font-bold transition font-mono"
+                  >
+                    Format HTML
+                  </button>
+                </div>
+                <textarea
+                  value={htmlCode}
+                  onChange={(e) => setHtmlCode(e.target.value)}
+                  className="flex-1 w-full h-[550px] p-4 bg-transparent outline-none border-none font-mono text-[10.5pt] leading-relaxed resize-none text-zinc-100"
+                  spellCheck={false}
+                />
+              </div>
+            ) : (
+              /* Paper Container — always white-based background */
+              <div
+                id="editor-paper-container"
+                onClick={handleEditorClickOrSelect}
+                className={`relative transition-all duration-200 select-text rounded border animate-in fade-in duration-150 ${
+                  layoutMode === "web"
+                    ? "w-full max-w-[1000px] border-zinc-250 dark:border-zinc-800"
+                    : editorTheme === 'light'
+                      ? 'shadow-[0_4px_16px_rgba(0,0,0,0.12)] border-zinc-200 text-zinc-800'
+                      : 'shadow-[0_4px_24px_rgba(0,0,0,0.7)] border-zinc-700 text-zinc-100'
+                }`}
+                style={{
+                  width: layoutMode === "web" ? "100%" : (orientation === "Portrait" ? `${620 * (zoom / 100)}px` : `${860 * (zoom / 100)}px`),
+                  minHeight: layoutMode === "web" ? "600px" : (orientation === "Portrait" ? `${880 * (zoom / 100)}px` : `${620 * (zoom / 100)}px`),
+                  padding: layoutMode === "web" ? "24px" : getPaddingStyle(),
+                  backgroundColor: layoutMode === "web" ? (webBgColor || pageColor) : pageColor,
+                  background: layoutMode === "web" && webBgGradient ? webBgGradient : undefined,
                 }}
-              />
-            </div>
+              >
+                {/* Watermark */}
+                {layoutMode === "print" && watermarkText && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden opacity-[0.03] z-0">
+                    <span className="font-black select-none transform -rotate-30 tracking-widest text-center uppercase text-[7vw] text-blue-500">
+                      {watermarkText}
+                    </span>
+                  </div>
+                )}
+
+                {/* Spelling popup */}
+                {spellPopover.visible && (
+                  <div 
+                    className="absolute z-50 bg-white dark:bg-zinc-955 border border-zinc-200 dark:border-zinc-850 p-2.5 rounded-lg shadow-xl w-44 font-sans text-xs flex flex-col gap-1.5 text-zinc-850 dark:text-zinc-200 select-none animate-in fade-in zoom-in-95 duration-100"
+                    style={{ left: `${spellPopover.x}px`, top: `${spellPopover.y}px`, transform: 'translateX(-50%)' }}
+                  >
+                    <div className="text-[10px] text-zinc-450 font-bold uppercase tracking-wider">Suggested Spelling:</div>
+                    <div className="flex flex-col gap-1">
+                      {spellPopover.suggestions.map((s, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => applySpellCorrection(s)}
+                          className="w-full text-left px-2 py-1 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 transition font-bold"
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="h-px bg-zinc-150 dark:bg-zinc-800 my-0.5" />
+                    <div className="flex gap-2 justify-between">
+                      <button onClick={ignoreSpellCheck} className="text-zinc-455 hover:text-zinc-700 dark:hover:text-zinc-300 font-bold text-[10px]">Ignore</button>
+                      <button onClick={ignoreSpellCheck} className="text-zinc-455 hover:text-zinc-700 font-bold text-[10px]">Add to Dict</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Content Editable Area */}
+                <div
+                  ref={editorRef}
+                  id="editor-content"
+                  contentEditable
+                  suppressContentEditableWarning
+                  onClick={handleRedactClick}
+                  onInput={() => {
+                    buildOutline()
+                    if(spellCheckEnabled) runSpellCheck()
+                  }}
+                  className="outline-none w-full h-full relative z-10 selection:bg-blue-100 dark:selection:bg-blue-950/30 min-h-[700px] leading-relaxed"
+                  style={{
+                    fontFamily: "var(--font-geist-sans), Arial, sans-serif",
+                    fontSize: "11pt",
+                    zoom: `${zoom}%`
+                  }}
+                  onPaste={(e) => {
+                    const text = e.clipboardData.getData("text/plain")
+                    if (text) {
+                      e.preventDefault()
+                      document.execCommand("insertText", false, text)
+                    }
+                  }}
+                />
+              </div>
+            )}
 
             {/* Footer text */}
-            <div className="w-full flex justify-between px-6 text-[10px] text-zinc-400 font-mono tracking-widest uppercase select-none border-t border-dashed border-zinc-200 dark:border-zinc-800 pt-1.5 mb-8">
-              <span>Footer: {footerText}</span>
-              {showPageNumbers && <span>Page {currentPage} of {passedPageCount}</span>}
-            </div>
+            {layoutMode === "print" && (
+              <div className="w-full flex justify-between px-6 text-[10px] text-zinc-400 font-mono tracking-widest uppercase select-none border-t border-dashed border-zinc-200 dark:border-zinc-800 pt-1.5 mb-8 animate-in fade-in duration-150">
+                <span>Footer: {footerText}</span>
+                {showPageNumbers && <span>Page {currentPage} of {passedPageCount}</span>}
+              </div>
+            )}
+          </div>
 
           </div>
-        </div>
 
         {/* Comments Sidebar */}
         <aside className="w-72 border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 shrink-0 overflow-y-auto space-y-3">
@@ -1959,12 +2528,12 @@ export default function WordEditor({
       {/* KEYBOARD SHORTCUTS */}
       {modalOpen.shortcuts && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in duration-200 select-none">
-          <div className="w-[380px] border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+          <div className="w-[380px] border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-955 text-zinc-800 dark:text-zinc-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
             <div className="px-5 py-4 border-b border-zinc-150 dark:border-zinc-850 flex justify-between items-center">
               <span className="text-sm font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Keyboard Shortcuts</span>
-              <button onClick={() => setModalOpen(prev => ({ ...prev, shortcuts: false }))} className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-850 text-zinc-450"><X className="h-4 w-4" /></button>
+              <button onClick={() => setModalOpen(prev => ({ ...prev, shortcuts: false }))} className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-850 text-zinc-455"><X className="h-4 w-4" /></button>
             </div>
-            <div className="p-6 space-y-3 text-xs font-mono text-zinc-650 dark:text-zinc-400">
+            <div className="p-6 space-y-3 text-xs font-mono text-zinc-655 dark:text-zinc-400">
               <div className="flex justify-between border-b border-zinc-150 dark:border-zinc-850 pb-1.5">
                 <span>Bold</span>
                 <span className="font-bold bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">Ctrl + B</span>
@@ -1992,6 +2561,155 @@ export default function WordEditor({
             </div>
             <div className="px-5 py-3.5 bg-zinc-50 dark:bg-zinc-900 flex justify-end">
               <button onClick={() => setModalOpen(prev => ({ ...prev, shortcuts: false }))} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* WEB PAGE SETTINGS (SEO & BACKGROUND) MODAL */}
+      {modalOpen.seoSettings && (
+        <div className="fixed inset-0 z-55 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200 select-none">
+          <div className="w-[480px] border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="px-5 py-4 border-b border-zinc-150 dark:border-zinc-850 flex justify-between items-center bg-zinc-50 dark:bg-zinc-900/50">
+              <span className="text-sm font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Web Page Settings (SEO & Styling)</span>
+              <button onClick={() => setModalOpen(prev => ({ ...prev, seoSettings: false }))} className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-850 text-zinc-450"><X className="h-4 w-4" /></button>
+            </div>
+            
+            <div className="p-6 space-y-4 text-xs overflow-y-auto max-h-[450px]">
+              
+              {/* Section 1: SEO */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-[10px] text-zinc-400 uppercase tracking-wider border-b border-zinc-150 dark:border-zinc-850 pb-1">SEO Headers</h4>
+                
+                <div className="space-y-1.5">
+                  <label className="text-zinc-500 font-bold block">Page Title (&lt;title&gt;):</label>
+                  <input
+                    type="text"
+                    value={seoMetadata.title}
+                    onChange={(e) => setSeoMetadata(prev => ({ ...prev, title: e.target.value }))}
+                    className="w-full p-2 border border-zinc-250 rounded-lg bg-zinc-55 dark:bg-zinc-900 focus:ring-1 focus:ring-blue-500 outline-none text-zinc-750 dark:text-zinc-300"
+                    placeholder="e.g. My Portfolio Website"
+                  />
+                </div>
+                
+                <div className="space-y-1.5">
+                  <label className="text-zinc-500 font-bold block">Meta Description:</label>
+                  <textarea
+                    value={seoMetadata.description}
+                    onChange={(e) => setSeoMetadata(prev => ({ ...prev, description: e.target.value }))}
+                    className="w-full p-2 border border-zinc-250 rounded-lg bg-zinc-55 dark:bg-zinc-900 focus:ring-1 focus:ring-blue-500 outline-none text-zinc-750 dark:text-zinc-300"
+                    rows={2}
+                    placeholder="Brief description of the webpage for search engines..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-zinc-500 font-bold block">Keywords:</label>
+                    <input
+                      type="text"
+                      value={seoMetadata.keywords}
+                      onChange={(e) => setSeoMetadata(prev => ({ ...prev, keywords: e.target.value }))}
+                      className="w-full p-2 border border-zinc-250 rounded-lg bg-zinc-55 dark:bg-zinc-900 focus:ring-1 focus:ring-blue-500 outline-none text-zinc-750 dark:text-zinc-300"
+                      placeholder="comma-separated words"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-zinc-500 font-bold block">Author Name:</label>
+                    <input
+                      type="text"
+                      value={seoMetadata.author}
+                      onChange={(e) => setSeoMetadata(prev => ({ ...prev, author: e.target.value }))}
+                      className="w-full p-2 border border-zinc-250 rounded-lg bg-zinc-55 dark:bg-zinc-900 focus:ring-1 focus:ring-blue-500 outline-none text-zinc-750 dark:text-zinc-300"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Web Background Style */}
+              <div className="space-y-3 pt-2">
+                <h4 className="font-bold text-[10px] text-zinc-400 uppercase tracking-wider border-b border-zinc-150 dark:border-zinc-850 pb-1">Webpage Background Styling</h4>
+                
+                <div className="space-y-2">
+                  <label className="text-zinc-500 font-bold block">Preset Colors:</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {[
+                      { bg: "#ffffff", label: "Clean White" },
+                      { bg: "#f8fafc", label: "Slate Light" },
+                      { bg: "#eff6ff", label: "Ocean Light" },
+                      { bg: "#0f172a", label: "Dark Slate" },
+                      { bg: "#121212", label: "Charcoal Dark" }
+                    ].map(preset => (
+                      <button
+                        key={preset.bg}
+                        type="button"
+                        onClick={() => { setWebBgColor(preset.bg); setWebBgGradient("") }}
+                        className={`px-2.5 py-1.5 rounded-lg border text-[10px] font-bold transition flex items-center gap-1.5 ${
+                          webBgColor === preset.bg && !webBgGradient ? "border-blue-500 bg-blue-50/20 text-blue-600" : "border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 text-zinc-600 dark:text-zinc-400"
+                        }`}
+                      >
+                        <span className="w-3.5 h-3.5 rounded-full border border-zinc-300 dark:border-zinc-700 block" style={{ backgroundColor: preset.bg }} />
+                        <span>{preset.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-1">
+                  <label className="text-zinc-500 font-bold block">Gradient Fills:</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { grad: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)", label: "Clear Sky" },
+                      { grad: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)", label: "Clean Emerald" },
+                      { grad: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", label: "Dark Space" },
+                      { grad: "linear-gradient(135deg, #1e1b4b 0%, #311042 100%)", label: "Twilight Violet" }
+                    ].map(preset => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => { setWebBgGradient(preset.grad) }}
+                        className={`p-2 rounded-xl border text-[10px] font-bold text-left transition flex flex-col gap-1 ${
+                          webBgGradient === preset.grad ? "border-blue-500 bg-blue-50/20 text-blue-600" : "border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 text-zinc-650 dark:text-zinc-400"
+                        }`}
+                      >
+                        <span className="h-6 w-full rounded border border-zinc-250 block" style={{ background: preset.grad }} />
+                        <span className="truncate">{preset.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 pt-2">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-zinc-500 font-bold block">Custom Color:</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={webBgColor}
+                        onChange={(e) => { setWebBgColor(e.target.value); setWebBgGradient("") }}
+                        className="h-8 w-8 rounded cursor-pointer border border-zinc-250 p-0"
+                      />
+                      <span className="font-mono font-bold text-zinc-500">{webBgColor.toUpperCase()}</span>
+                    </div>
+                  </div>
+                  {webBgGradient && (
+                    <button
+                      type="button"
+                      onClick={() => setWebBgGradient("")}
+                      className="px-3 py-1 border border-zinc-200 dark:border-zinc-800 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 text-[10px] font-bold mt-4"
+                    >
+                      Clear Gradient Fill
+                    </button>
+                  )}
+                </div>
+
+              </div>
+
+            </div>
+
+            <div className="px-5 py-3.5 bg-zinc-50 dark:bg-zinc-900 flex justify-end gap-2">
+              <button onClick={() => setModalOpen(prev => ({ ...prev, seoSettings: false }))} className="px-4 py-2 border border-zinc-200 dark:border-zinc-850 rounded-xl text-xs font-bold text-zinc-455 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition">Cancel</button>
+              <button onClick={() => setModalOpen(prev => ({ ...prev, seoSettings: false }))} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-750 transition animate-pulse">Apply Settings</button>
             </div>
           </div>
         </div>
