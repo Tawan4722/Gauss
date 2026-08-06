@@ -9,7 +9,7 @@ import {
 } from "lucide-react"
 import WordEditor from "./WordEditor"
 import { toolRegistry, type ToolSettings } from "@/lib/tools/registry"
-import { processTool, type ToolOutput } from "@/lib/tools/processors"
+import { processTool, type ToolOutput, type ToolProcessConfig } from "@/lib/tools/processors"
 import LayoutSandbox, { type SandboxConfig } from "./LayoutSandbox"
 
 // Templates for Local Documents Explorer
@@ -298,7 +298,7 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
   }
 
   // Web Worker execution function
-  const executeInWorker = (toolId: string, files: File[], settings: ToolSettings, config?: any): Promise<ToolOutput[]> => {
+  const executeInWorker = (toolId: string, files: File[], settings: ToolSettings, config?: ToolProcessConfig | SandboxConfig): Promise<ToolOutput[]> => {
     return new Promise((resolve, reject) => {
       try {
         const worker = new Worker(new URL("../../workers/pdf.worker.ts", import.meta.url))
@@ -353,7 +353,7 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
     setProcessing(true)
     setProcessLog("Reading files from sandbox memory...")
     try {
-      let finalFiles = [...uploadedFiles]
+      const finalFiles = [...uploadedFiles]
       
       // If converting active document to PDF: use browser print for fidelity
       if (activeToolId === "word-to-pdf") {

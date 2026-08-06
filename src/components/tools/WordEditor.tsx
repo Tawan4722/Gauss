@@ -4,11 +4,8 @@ import { useRef, useEffect, useCallback, useState, useMemo } from "react"
 import { 
   Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, AlignJustify,
   List, ListOrdered, Outdent, Indent, Undo, Redo, Image as ImageIcon, Table, Link as LinkIcon,
-  FileText, Settings, HelpCircle, FileDown, PlusCircle, Scissors,
-  Type, Palette, ClipboardList, Info, Calendar, Milestone,
-  Printer, CheckSquare, Paintbrush, Search, Share, User, Star, Cloud, MessageSquare, Check, X,
-  ChevronDown, ChevronRight, Keyboard, Languages, BookOpen, Settings2,
-  Code, Eye, LayoutGrid
+  FileText, Scissors, Type, Palette, Printer, CheckSquare, Paintbrush, Share, User, Star, Cloud, MessageSquare, X,
+  ChevronDown, Settings2, Code, Eye, LayoutGrid
 } from "lucide-react"
 import { exportToDocx } from "@/lib/tools/docxExporter"
 import { importFromDocx } from "@/lib/tools/docxParser"
@@ -124,7 +121,7 @@ export default function WordEditor({
   pageCount: passedPageCount,
   onPageCountChange,
   watermarkText,
-  setWatermarkText,
+  setWatermarkText: _setWatermarkText,
   showPageNumbers,
   setShowPageNumbers,
   margins,
@@ -358,7 +355,7 @@ export default function WordEditor({
 
     try {
       range.surroundContents(span)
-    } catch (err) {
+    } catch {
       alert("Spans crossing boundary elements cannot be wrapped directly. Please comment within a single block.")
       return
     }

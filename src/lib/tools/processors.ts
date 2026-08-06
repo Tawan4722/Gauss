@@ -17,6 +17,9 @@ export type ToolProcessResult = {
   outputs: ToolOutput[];
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ToolProcessConfig = any;
+
 const cleanName = (value: string) =>
   value.trim().replace(/[^a-z0-9._-]+/gi, "-").replace(/-+/g, "-").replace(/^[-.]+|[-.]+$/g, "") || "gauss";
 const baseNameOf = (name: string) => cleanName(name.lastIndexOf(".") >= 0 ? name.slice(0, name.lastIndexOf(".")) : name);
@@ -77,7 +80,7 @@ const writeWrappedText = (page: PDFPage, text: string, font: Awaited<ReturnType<
 };
 
 
-export const processTool = async (tool: Tool, files: File[], settings: ToolSettings, config?: any): Promise<ToolProcessResult> => {
+export const processTool = async (tool: Tool, files: File[], settings: ToolSettings, config?: ToolProcessConfig): Promise<ToolProcessResult> => {
   // 1. Password Protection (Protect PDF)
   if (tool.id === "protect-pdf") {
     if (files.length === 0) throw new Error("Please upload at least one PDF to protect.");
@@ -505,10 +508,11 @@ export const processTool = async (tool: Tool, files: File[], settings: ToolSetti
     const italicFont = await pdf.embedFont(StandardFonts.HelveticaOblique);
     if (pages.length > 0) {
       const page = pages[pages.length - 1]; // Sign last page
-      const sx = config?.signatureX !== undefined ? config.signatureX : 100;
-      const sy = config?.signatureY !== undefined ? config.signatureY : 80;
-      const scale = config?.signatureScale !== undefined ? config.signatureScale : 1.0;
-      const sigStr = config?.signatureText || "Authorized Sign";
+      const cfg = (config || {}) as Record<string, unknown>;
+      const sx = typeof cfg.signatureX === "number" ? cfg.signatureX : 100;
+      const sy = typeof cfg.signatureY === "number" ? cfg.signatureY : 80;
+      const scale = typeof cfg.signatureScale === "number" ? cfg.signatureScale : 1.0;
+      const sigStr = typeof cfg.signatureText === "string" ? cfg.signatureText : "Authorized Sign";
 
       page.drawText(sigStr, {
         x: sx + 10,
