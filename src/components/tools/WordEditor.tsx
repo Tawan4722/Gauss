@@ -37,7 +37,6 @@ interface WordEditorProps {
   pageCount: number
   onPageCountChange?: (count: number) => void
   watermarkText: string
-  setWatermarkText: (text: string) => void
   showPageNumbers: boolean
   setShowPageNumbers: (show: boolean) => void
   margins: string
@@ -121,7 +120,6 @@ export default function WordEditor({
   pageCount: passedPageCount,
   onPageCountChange,
   watermarkText,
-  setWatermarkText: _setWatermarkText,
   showPageNumbers,
   setShowPageNumbers,
   margins,
@@ -2018,8 +2016,7 @@ You can host this website on free offline static hosting platforms such as:
                   width: layoutMode === "web" ? "100%" : (orientation === "Portrait" ? `${620 * (zoom / 100)}px` : `${860 * (zoom / 100)}px`),
                   minHeight: layoutMode === "web" ? "600px" : (orientation === "Portrait" ? `${880 * (zoom / 100)}px` : `${620 * (zoom / 100)}px`),
                   padding: layoutMode === "web" ? "24px" : getPaddingStyle(),
-                  backgroundColor: layoutMode === "web" ? (webBgColor || pageColor) : pageColor,
-                  background: layoutMode === "web" && webBgGradient ? webBgGradient : undefined,
+                  background: layoutMode === "web" && webBgGradient ? webBgGradient : (layoutMode === "web" ? (webBgColor || pageColor) : pageColor),
                 }}
               >
                 {/* Watermark */}

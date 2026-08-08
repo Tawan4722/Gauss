@@ -265,8 +265,8 @@ self.addEventListener("message", async (event) => {
     const useObjectStreams = settings.linearize !== false
     
     // Bates sequence options
-    const batesPrefix = settings.batesPrefix || "CONFIDENTIAL-"
-    const batesStart = Number(settings.batesStart ?? 1)
+    const batesPrefix = settings.batesPrefix || "BATES-"
+    const batesStart = Number(settings.batesStart ?? 101)
     const batesPadding = Number(settings.batesPadding ?? 6)
     const batesPosition = settings.batesPosition || "Bottom Right"
     const applyBates = toolId === "bates-pdf"
@@ -348,7 +348,7 @@ self.addEventListener("message", async (event) => {
 
       // 3. Bates Stamping Engine
       if (applyBates || (showBates && config)) {
-        const prefix = applyBates ? batesPrefix : (config?.watermarkText ? (config?.watermarkText + "-") : "BATES-")
+        const prefix = applyBates ? batesPrefix : "BATES-"
         const padding = applyBates ? batesPadding : 6
         const position = applyBates ? batesPosition : "Bottom Right"
         

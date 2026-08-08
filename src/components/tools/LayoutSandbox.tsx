@@ -233,7 +233,7 @@ export default function LayoutSandbox({
                 >
                   <Hash className="h-3 w-3" />
                   <span style={{ fontSize: `${config.batesFontSize}px` }}>
-                    PLAINTIFF-000101
+                    BATES-000101
                   </span>
                   <div className="absolute -top-5 left-0 rounded bg-cyan-400 px-1 py-0.5 text-[8px] font-black text-zinc-950 opacity-0 group-hover:opacity-100 transition">
                     X:{config.batesX} Y:{config.batesY}
