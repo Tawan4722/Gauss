@@ -588,7 +588,6 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
         pageCount={pageCount}
         onPageCountChange={setPageCount}
         watermarkText={watermarkText}
-        setWatermarkText={setWatermarkText}
         showPageNumbers={showPageNumbers}
         setShowPageNumbers={setShowPageNumbers}
         margins={overrides?.margins || margins}
