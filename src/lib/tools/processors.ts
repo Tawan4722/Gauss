@@ -45,11 +45,16 @@ const pdfBytesToBlob = (bytes: Uint8Array) => {
 const canvasToBlob = (canvas: HTMLCanvasElement, type: string, quality?: number) =>
   new Promise<Blob | null>((resolve) => canvas.toBlob((blob) => resolve(blob), type, quality));
 
-const copyPdfPages = async (target: PDFDocument, sourceFile: File, indices?: number[]) => {
+const copyPdfPages = async (target: PDFDocument, sourceFile: File, indices?: number[], angle = 0) => {
   const source = await PDFDocument.load(await sourceFile.arrayBuffer());
   const sourceIndices = indices ?? source.getPageIndices();
   const pages = await target.copyPages(source, sourceIndices.filter((index) => index >= 0 && index < source.getPageCount()));
-  pages.forEach((page) => target.addPage(page));
+  pages.forEach((page) => {
+    if (angle) {
+      page.setRotation(degrees((page.getRotation().angle + angle) % 360));
+    }
+    target.addPage(page);
+  });
   return pages.length;
 };
 
@@ -151,8 +156,9 @@ export const processTool = async (tool: Tool, files: File[], settings: ToolSetti
     if (files.length === 0) throw new Error("Upload a PDF file to organize.");
     const pdf = await PDFDocument.create();
     let count = 0;
-    for (const file of files) {
-      count += await copyPdfPages(pdf, file);
+    for (let i = 0; i < files.length; i++) {
+      const rot = (config?.pageRotations && config.pageRotations[i]) || 0;
+      count += await copyPdfPages(pdf, files[i], undefined, rot);
     }
     const bytes = await pdf.save();
     return {

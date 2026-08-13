@@ -292,52 +292,7 @@ export const toolRegistry: Tool[] = [
     processingMode: "client",
     settingsSchema: [
       { name: "targetLanguage", label: "Target Language", type: "select", options: ["Thai", "Japanese", "Spanish", "German"], defaultValue: "Thai" }
-    ],
-  },
-  {
-    id: "workflows",
-    name: "Custom Workflows",
-    category: "Productivity",
-    description: "Chain multiple PDF actions together (e.g. OCR -> Watermark -> Protect) into a single flow.",
-    acceptedFileTypes: ["*/*"],
-    processingMode: "client",
-    settingsSchema: [],
-  },
-  {
-    id: "cloud-sync",
-    name: "Cloud Integration",
-    category: "Productivity",
-    description: "Simulate and configure real-time backups and folder mirrors with Google Drive and Dropbox.",
-    acceptedFileTypes: ["*/*"],
-    processingMode: "client",
-    settingsSchema: [],
-  },
-  {
-    id: "desktop-app",
-    name: "Desktop Application",
-    category: "Productivity",
-    description: "Preview the client-side app running inside full macOS and Windows app frames.",
-    acceptedFileTypes: ["*/*"],
-    processingMode: "client",
-    settingsSchema: [],
-  },
-  {
-    id: "mobile-app",
-    name: "Mobile Application",
-    category: "Productivity",
-    description: "Preview the client-side editor optimized inside iOS and Android mobile screens.",
-    acceptedFileTypes: ["*/*"],
-    processingMode: "client",
-    settingsSchema: [],
-  },
-  {
-    id: "developer-api",
-    name: "Developer API",
-    category: "Productivity",
-    description: "View mock integration details, sandbox APIs, and JSON payloads for local automation.",
-    acceptedFileTypes: ["*/*"],
-    processingMode: "client",
-    settingsSchema: [],
+    ]
   }
 ];
 

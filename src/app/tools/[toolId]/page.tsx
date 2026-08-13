@@ -5,14 +5,6 @@ import { Suspense } from "react"
 import ToolWorkspace from "@/components/tools/ToolWorkspace"
 import { getToolById, toolRegistry } from "@/lib/tools/registry"
 
-export const unstable_instant = {
-  prefetch: "runtime",
-  samples: [
-    { params: { toolId: "editor" } },
-    { params: { toolId: "organize-pdf" } }
-  ]
-}
-
 type ToolPageProps = {
   params: Promise<{ toolId: string }>
 }
@@ -44,6 +36,7 @@ function ToolPageContent({ toolId }: { toolId: string }) {
 }
 
 export default async function ToolPage({ params }: ToolPageProps) {
+  const { toolId } = await params
   return (
     <Suspense
       fallback={
@@ -55,9 +48,7 @@ export default async function ToolPage({ params }: ToolPageProps) {
         </div>
       }
     >
-      {params.then(({ toolId }) => (
-        <ToolPageContent toolId={toolId} />
-      ))}
+      <ToolPageContent toolId={toolId} />
     </Suspense>
   )
 }

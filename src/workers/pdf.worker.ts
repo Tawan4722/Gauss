@@ -316,10 +316,11 @@ self.addEventListener("message", async (event) => {
     } else {
       pagesToCompile = files.flatMap((f: { buffer: ArrayBuffer }, fileIndex: number) => {
         const doc = loadedDocs[fileIndex]
+        const rot = (config?.pageRotations && config.pageRotations[fileIndex]) || 0
         return Array.from({ length: doc.getPageCount() }, (_, pageIndex) => ({
           fileIndex,
           pageIndex,
-          rotation: 0
+          rotation: rot
         }))
       })
     }
