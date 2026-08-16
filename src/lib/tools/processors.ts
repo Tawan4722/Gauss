@@ -692,6 +692,33 @@ export const processTool = async (tool: Tool, files: File[], settings: ToolSetti
   };
 };
 
+const parsePageRanges = (rangeStr: string, totalPages: number): number[] => {
+  const trimmed = rangeStr.trim();
+  if (!trimmed || trimmed === "1-9999" || trimmed.toLowerCase() === "all") {
+    return Array.from({ length: totalPages }, (_, i) => i);
+  }
+  const set = new Set<number>();
+  const parts = trimmed.split(",");
+  for (const part of parts) {
+    const range = part.trim();
+    if (!range) continue;
+    if (range.includes("-")) {
+      const [startStr, endStr] = range.split("-").map((s) => s.trim());
+      const start = Math.max(1, parseInt(startStr, 10) || 1);
+      const end = Math.min(totalPages, parseInt(endStr, 10) || totalPages);
+      for (let i = start; i <= end; i++) {
+        set.add(i - 1);
+      }
+    } else {
+      const pageNum = parseInt(range, 10);
+      if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+        set.add(pageNum - 1);
+      }
+    }
+  }
+  return set.size > 0 ? Array.from(set).sort((a, b) => a - b) : Array.from({ length: totalPages }, (_, i) => i);
+};
+
 const processPdf = async (files: File[], settings: ToolSettings) => {
   const action = getString(settings, "action", "Merge");
   const useObjectStreams = getBoolean(settings, "linearize", true);
@@ -703,7 +730,7 @@ const processPdf = async (files: File[], settings: ToolSettings) => {
       const pageCount = source.getPageCount();
       // Compile page ranges or extract individual files
       const ranges = getString(settings, "pageRange", "1-9999");
-      const indices = ranges === "1-9999" ? Array.from({ length: pageCount }, (_, i) => i) : [0];
+      const indices = parsePageRanges(ranges, pageCount);
       for (const index of indices) {
         if (index >= pageCount) continue;
         const pdf = await PDFDocument.create();

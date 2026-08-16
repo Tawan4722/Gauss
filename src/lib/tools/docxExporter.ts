@@ -116,7 +116,7 @@ export async function exportToDocx(html: string, options: DocxExportOptions = {}
       <w:t>${footerContent}</w:t>
     </w:r>
   </w:p>
-</w:hdr>`);
+</w:ftr>`);
 
   // 7. Write images to word/media/
   images.forEach(img => {
