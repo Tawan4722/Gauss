@@ -152,7 +152,7 @@ export async function importFromDocx(file: File): Promise<string> {
             break;
           case "color":
             const colVal = prop.getAttribute("w:val") || prop.getAttribute("val");
-            if (colVal) color = `#${colVal}`;
+            if (colVal && colVal !== "auto") color = `#${colVal}`;
             break;
           case "shd":
             const bgVal = prop.getAttribute("w:fill") || prop.getAttribute("fill");
@@ -334,11 +334,9 @@ export async function importFromDocx(file: File): Promise<string> {
         
         const paragraphs = Array.from(cell.children).filter(c => c.localName === "p");
         if (paragraphs.length === 0) {
-          const align = (cell as HTMLElement).style.textAlign || "";
-          const alignStyle = align ? `text-align:${align};` : "";
           const text = cell.textContent || "";
           const escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-          tblHtml += `<p style="${alignStyle}">${escaped}</p>`;
+          tblHtml += `<p>${escaped}</p>`;
         } else {
           for (const p of paragraphs) {
             tblHtml += await parseParagraph(p);

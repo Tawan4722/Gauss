@@ -58,12 +58,22 @@ const copyPdfPages = async (target: PDFDocument, sourceFile: File, indices?: num
   return pages.length;
 };
 
+const sanitizeWinAnsi = (text: string): string => {
+  if (!text) return "";
+  return text
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/[–—]/g, "-")
+    .replace(/[^\x00-\xFF]/g, "?");
+};
+
 const writeWrappedText = (page: PDFPage, text: string, font: Awaited<ReturnType<PDFDocument["embedFont"]>>) => {
   const { width, height } = page.getSize();
   const fontSize = 11;
   const lineHeight = 15;
   const maxChars = Math.max(Math.floor((width - 96) / 6), 40);
-  const words = text.replace(/\s+/g, " ").split(" ");
+  const cleanText = sanitizeWinAnsi(text);
+  const words = cleanText.replace(/\s+/g, " ").split(" ");
   const lines: string[] = [];
   let line = "";
 
@@ -555,7 +565,8 @@ export const processTool = async (tool: Tool, files: File[], settings: ToolSetti
       const sx = typeof cfg.signatureX === "number" ? cfg.signatureX : 100;
       const sy = typeof cfg.signatureY === "number" ? cfg.signatureY : 80;
       const scale = typeof cfg.signatureScale === "number" ? cfg.signatureScale : 1.0;
-      const sigStr = typeof cfg.signatureText === "string" ? cfg.signatureText : "Authorized Sign";
+      const rawSigStr = typeof cfg.signatureText === "string" ? cfg.signatureText : "Authorized Sign";
+      const sigStr = sanitizeWinAnsi(rawSigStr);
 
       page.drawText(sigStr, {
         x: sx + 10,
@@ -643,7 +654,8 @@ export const processTool = async (tool: Tool, files: File[], settings: ToolSetti
     const boldFont = await pdf.embedFont(StandardFonts.HelveticaBold);
     const textFont = await pdf.embedFont(StandardFonts.Helvetica);
     
-    const watermarkStr = config?.watermarkText || getString(settings, "watermarkText", "DRAFT");
+    const rawWatermarkStr = config?.watermarkText || getString(settings, "watermarkText", "DRAFT");
+    const watermarkStr = sanitizeWinAnsi(rawWatermarkStr);
     const wSize = config?.watermarkSize || getNumber(settings, "watermarkSize", 60);
     const wOpacity = config?.watermarkOpacity || getNumber(settings, "watermarkOpacity", 0.15);
     const useObjectStreams = getBoolean(settings, "linearize", true);
@@ -704,8 +716,10 @@ const parsePageRanges = (rangeStr: string, totalPages: number): number[] => {
     if (!range) continue;
     if (range.includes("-")) {
       const [startStr, endStr] = range.split("-").map((s) => s.trim());
-      const start = Math.max(1, parseInt(startStr, 10) || 1);
-      const end = Math.min(totalPages, parseInt(endStr, 10) || totalPages);
+      const rawStart = parseInt(startStr, 10) || 1;
+      const rawEnd = parseInt(endStr, 10) || totalPages;
+      const start = Math.max(1, Math.min(rawStart, rawEnd));
+      const end = Math.min(totalPages, Math.max(rawStart, rawEnd));
       for (let i = start; i <= end; i++) {
         set.add(i - 1);
       }

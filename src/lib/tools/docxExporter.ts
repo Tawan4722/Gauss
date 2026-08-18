@@ -126,6 +126,23 @@ export async function exportToDocx(html: string, options: DocxExportOptions = {}
   return await zip.generateAsync({ type: "blob" });
 }
 
+function parseColorToHex(colorStr: string): string | null {
+  if (!colorStr) return null;
+  const trimmed = colorStr.trim();
+  const hex6 = trimmed.match(/#([a-fA-F0-9]{6})/i);
+  if (hex6) return hex6[1].toUpperCase();
+  const hex3 = trimmed.match(/#([a-fA-F0-9])([a-fA-F0-9])([a-fA-F0-9])/i);
+  if (hex3) return `${hex3[1]}${hex3[1]}${hex3[2]}${hex3[2]}${hex3[3]}${hex3[3]}`.toUpperCase();
+  const rgbMatch = trimmed.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+  if (rgbMatch) {
+    const r = parseInt(rgbMatch[1], 10).toString(16).padStart(2, "0");
+    const g = parseInt(rgbMatch[2], 10).toString(16).padStart(2, "0");
+    const b = parseInt(rgbMatch[3], 10).toString(16).padStart(2, "0");
+    return `${r}${g}${b}`.toUpperCase();
+  }
+  return null;
+}
+
 function buildDocumentXml(
   html: string,
   options: DocxExportOptions,
@@ -233,20 +250,16 @@ function buildDocumentXml(
 
     // Parse Color (Hex)
     const color = el.style.color || "";
-    if (color) {
-      const hexMatch = color.match(/#([a-fA-F0-9]{6})/);
-      if (hexMatch) {
-        rPr += `<w:color w:val="${hexMatch[1].toUpperCase()}"/>`;
-      }
+    const colorHex = parseColorToHex(color);
+    if (colorHex) {
+      rPr += `<w:color w:val="${colorHex}"/>`;
     }
 
     // Parse Highlight Color
     const bg = el.style.backgroundColor || "";
-    if (bg) {
-      const hexMatch = bg.match(/#([a-fA-F0-9]{6})/);
-      if (hexMatch) {
-        rPr += `<w:shd w:fill="${hexMatch[1].toUpperCase()}"/>`;
-      }
+    const bgHex = parseColorToHex(bg);
+    if (bgHex) {
+      rPr += `<w:shd w:fill="${bgHex}"/>`;
     }
 
     return rPr;
@@ -446,14 +459,8 @@ function buildDocumentXml(
       cells.forEach(cell => {
         const cellEl = cell as HTMLElement;
         const bg = cellEl.style.backgroundColor || "";
-        let shdXml = "";
-        
-        if (bg) {
-          const hexMatch = bg.match(/#([a-fA-F0-9]{6})/);
-          if (hexMatch) {
-            shdXml = `<w:shd w:fill="${hexMatch[1].toUpperCase()}"/>`;
-          }
-        }
+        const bgHex = parseColorToHex(bg);
+        const shdXml = bgHex ? `<w:shd w:fill="${bgHex}"/>` : "";
 
         tblXml += `<w:tc>
           <w:tcPr>

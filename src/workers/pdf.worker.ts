@@ -9,6 +9,15 @@ interface LineSegment {
   width: number
 }
 
+const sanitizeWinAnsi = (text: string): string => {
+  if (!text) return "";
+  return text
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/[–—]/g, "-")
+    .replace(/[^\x00-\xFF]/g, "?");
+};
+
 self.addEventListener("message", async (event) => {
   const { files, toolId, editorPages, settings, config } = event.data
   
@@ -288,7 +297,9 @@ self.addEventListener("message", async (event) => {
           const [start, end] = trimmed.split("-").map(Number)
           const s = Math.max(1, isNaN(start) ? 1 : start)
           const e = Math.min(maxPages, isNaN(end) ? maxPages : end)
-          for (let i = s; i <= e; i++) {
+          const startIdx = Math.min(s, e)
+          const endIdx = Math.max(s, e)
+          for (let i = startIdx; i <= endIdx; i++) {
             pages.push(i - 1)
           }
         } else {
@@ -395,7 +406,8 @@ self.addEventListener("message", async (event) => {
 
       // 4. Interactive Watermark Placement
       if (showWatermark && config) {
-        const watermarkStr = config.watermarkText || "DRAFT"
+        const rawWatermarkStr = config.watermarkText || "DRAFT"
+        const watermarkStr = sanitizeWinAnsi(rawWatermarkStr)
         const wSize = config.watermarkSize || 60
         const wOpacity = config.watermarkOpacity || 0.15
         
@@ -412,7 +424,8 @@ self.addEventListener("message", async (event) => {
 
       // 5. Signature Block Placement
       if (showSignature && config) {
-        const sigStr = config.signatureText || "Authorized Sign"
+        const rawSigStr = config.signatureText || "Authorized Sign"
+        const sigStr = sanitizeWinAnsi(rawSigStr)
         const sX = config.signatureX
         const sY = config.signatureY
         
