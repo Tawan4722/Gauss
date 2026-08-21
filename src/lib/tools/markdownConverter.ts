@@ -193,13 +193,13 @@ export function markdownToHtml(md: string): string {
     const line = lines[i];
     const trimmed = line.trim();
     
-    // Check if it starts and ends with |
-    const isTableRow = trimmed.startsWith("|") && trimmed.endsWith("|") && trimmed.length > 1;
+    // Check if line starts with | or contains multiple | dividers
+    const isTableRow = trimmed.startsWith("|") && trimmed.length > 1;
     
     if (isTableRow) {
       const cells = trimmed.split("|").map(c => c.trim());
-      if (cells[0] === "") cells.shift();
-      if (cells[cells.length - 1] === "") cells.pop();
+      if (cells.length > 0 && cells[0] === "") cells.shift();
+      if (cells.length > 0 && cells[cells.length - 1] === "") cells.pop();
       
       const isSeparator = cells.every(cell => /^[:-]+$/.test(cell));
       

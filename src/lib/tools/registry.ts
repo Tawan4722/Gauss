@@ -293,6 +293,20 @@ export const toolRegistry: Tool[] = [
     settingsSchema: [
       { name: "targetLanguage", label: "Target Language", type: "select", options: ["Thai", "Japanese", "Spanish", "German"], defaultValue: "Thai" }
     ]
+  },
+  {
+    id: "bates-pdf",
+    name: "Bates Stamp PDF",
+    category: "PDF Operations",
+    description: "Bates stamp sequential identification numbers and custom prefixes on PDF document headers or footers.",
+    acceptedFileTypes: ["application/pdf", ".pdf"],
+    processingMode: "client",
+    settingsSchema: [
+      { name: "batesPrefix", label: "Bates Prefix", type: "text", defaultValue: "BATES-" },
+      { name: "batesStart", label: "Starting Number", type: "text", defaultValue: "101" },
+      { name: "batesPadding", label: "Digit Padding", type: "slider", min: 3, max: 10, defaultValue: 6 },
+      { name: "batesPosition", label: "Position", type: "select", options: ["Bottom Right", "Bottom Left", "Bottom Center", "Top Right", "Top Left", "Top Center"], defaultValue: "Bottom Right" },
+    ],
   }
 ];
 

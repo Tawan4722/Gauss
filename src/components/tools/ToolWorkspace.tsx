@@ -238,7 +238,7 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
 
       const isWorkerSupportedTool = [
         "merge-pdf", "organize-pdf", "split-pdf", "rotate-pdf", "crop-pdf",
-        "compress-pdf", "protect-pdf", "unlock-pdf", "watermark-pdf", "sign-pdf"
+        "compress-pdf", "protect-pdf", "unlock-pdf", "watermark-pdf", "sign-pdf", "bates-pdf"
       ].includes(activeToolId)
 
       const executionConfig = {

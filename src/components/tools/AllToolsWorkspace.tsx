@@ -2,12 +2,13 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { getToolById } from "@/lib/tools/registry"
 
 export default function AllToolsWorkspace() {
   const router = useRouter()
 
   useEffect(() => {
-    let targetTool = "converter"
+    let targetTool = "merge-pdf"
     try {
       const prefsStr = localStorage.getItem("gauss-preferences")
       const lastTool = localStorage.getItem("gauss-last-tool")
@@ -21,7 +22,7 @@ export default function AllToolsWorkspace() {
         }
       }
 
-      if (remember && lastTool) {
+      if (remember && lastTool && getToolById(lastTool)) {
         targetTool = lastTool
       }
     } catch {

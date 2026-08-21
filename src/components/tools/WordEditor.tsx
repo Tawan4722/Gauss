@@ -1487,7 +1487,7 @@ You can host this website on free offline static hosting platforms such as:
             setSpellCheckEnabled(!spellCheckEnabled)
             if(!spellCheckEnabled) runSpellCheck()
           }} 
-          className={`p-1.5 rounded hover:bg-zinc-205 dark:hover:bg-zinc-800 ${spellCheckEnabled ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20' : 'text-zinc-500'}`}
+          className={`p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 ${spellCheckEnabled ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20' : 'text-zinc-500'}`}
         >
           <CheckSquare className="h-3.5 w-3.5" />
         </button>
@@ -1539,7 +1539,7 @@ You can host this website on free offline static hosting platforms such as:
                     setShowStyleMenu(false)
                     exec("formatBlock", style.tag)
                   }}
-                  className="w-full text-left px-3 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-55 dark:hover:bg-zinc-900 transition"
+                  className="w-full text-left px-3 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition"
                 >
                   {style.label}
                 </button>
@@ -1560,13 +1560,13 @@ You can host this website on free offline static hosting platforms such as:
               setShowAlignMenu(false)
               setShowSpacingMenu(false)
             }}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded hover:bg-zinc-205 dark:hover:bg-zinc-800 text-[11px] font-bold text-zinc-600 dark:text-zinc-300"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-[11px] font-bold text-zinc-600 dark:text-zinc-300"
           >
             <span className="truncate max-w-16">Arial</span>
             <ChevronDown className="h-3 w-3" />
           </button>
           {showFontMenu && (
-            <div className="absolute z-50 mt-1 py-1 bg-white dark:bg-zinc-955 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-xl w-44 select-none font-sans">
+            <div className="absolute z-50 mt-1 py-1 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-xl w-44 select-none font-sans">
               {FONTS.map(f => (
                 <button
                   key={f}
@@ -1586,7 +1586,7 @@ You can host this website on free offline static hosting platforms such as:
 
         {/* Size Selection */}
         <div className="flex items-center gap-0.5">
-          <button onClick={() => applyFontSize("10")} className="p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-xs font-bold text-zinc-650">-</button>
+          <button onClick={() => applyFontSize("10")} className="p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-xs font-bold text-zinc-600">-</button>
           <div className="relative">
             <button
               onClick={() => {
@@ -1607,7 +1607,7 @@ You can host this website on free offline static hosting platforms such as:
                     key={s}
                     type="button"
                     onClick={() => applyFontSize(s)}
-                    className="w-full text-center py-1 hover:bg-zinc-55 dark:hover:bg-zinc-900 text-xs text-zinc-700 dark:text-zinc-300"
+                    className="w-full text-center py-1 hover:bg-zinc-50 dark:hover:bg-zinc-900 text-xs text-zinc-700 dark:text-zinc-300"
                   >
                     {s}
                   </button>
@@ -1615,7 +1615,7 @@ You can host this website on free offline static hosting platforms such as:
               </div>
             )}
           </div>
-          <button onClick={() => applyFontSize("12")} className="p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-xs font-bold text-zinc-650">+</button>
+          <button onClick={() => applyFontSize("12")} className="p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-xs font-bold text-zinc-600">+</button>
         </div>
 
         <Divider />
@@ -1624,7 +1624,7 @@ You can host this website on free offline static hosting platforms such as:
         <button title="Bold (Ctrl+B)" onClick={() => exec("bold")} className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300"><Bold className="h-3.5 w-3.5" /></button>
         <button title="Italic (Ctrl+I)" onClick={() => exec("italic")} className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300"><Italic className="h-3.5 w-3.5" /></button>
         <button title="Underline (Ctrl+U)" onClick={() => exec("underline")} className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300"><Underline className="h-3.5 w-3.5" /></button>
-        <button title="Strikethrough" onClick={() => exec("strikeThrough")} className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-650"><Strikethrough className="h-3.5 w-3.5" /></button>
+        <button title="Strikethrough" onClick={() => exec("strikeThrough")} className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600"><Strikethrough className="h-3.5 w-3.5" /></button>
 
         {/* Text color and highlight */}
         <div className="relative">
@@ -1657,8 +1657,8 @@ You can host this website on free offline static hosting platforms such as:
             onClick={() => { setShowBgColor(!showBgColor); setShowTextColor(false) }}
             className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 flex items-center gap-0.5"
           >
-            <Palette className="h-3.5 w-3.5 text-yellow-550" />
-            <div className="w-2.5 h-1 bg-yellow-350 rounded-sm" />
+            <Palette className="h-3.5 w-3.5 text-yellow-500" />
+            <div className="w-2.5 h-1 bg-yellow-300 rounded-sm" />
           </button>
           {showBgColor && (
             <div className="absolute z-50 mt-1 p-2 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-xl grid grid-cols-5 gap-1 select-none">
@@ -1797,17 +1797,17 @@ You can host this website on free offline static hosting platforms such as:
         <Divider />
 
         {/* Lists */}
-        <button title="Bullet list" onClick={() => exec("insertUnorderedList")} className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-650"><List className="h-3.5 w-3.5" /></button>
-        <button title="Numbered list" onClick={() => exec("insertOrderedList")} className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-655"><ListOrdered className="h-3.5 w-3.5" /></button>
-        <button title="Decrease indent" onClick={() => exec("outdent")} className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-650"><Outdent className="h-3.5 w-3.5" /></button>
-        <button title="Increase indent" onClick={() => exec("indent")} className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-650"><Indent className="h-3.5 w-3.5" /></button>
+        <button title="Bullet list" onClick={() => exec("insertUnorderedList")} className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600"><List className="h-3.5 w-3.5" /></button>
+        <button title="Numbered list" onClick={() => exec("insertOrderedList")} className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600"><ListOrdered className="h-3.5 w-3.5" /></button>
+        <button title="Decrease indent" onClick={() => exec("outdent")} className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600"><Outdent className="h-3.5 w-3.5" /></button>
+        <button title="Increase indent" onClick={() => exec("indent")} className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600"><Indent className="h-3.5 w-3.5" /></button>
         <button title="Clear formatting" onClick={clearFormatting} className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-red-500"><X className="h-3.5 w-3.5" /></button>
 
         {/* Redact */}
         <button
           title="Toggle Redaction Brush"
           onClick={() => setRedactMode(!redactMode)}
-          className={`p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 ${redactMode ? 'bg-red-55/20 text-red-500 border border-red-500/20 animate-pulse' : 'text-zinc-600 dark:text-zinc-300'}`}
+          className={`p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 ${redactMode ? 'bg-red-500/20 text-red-500 border border-red-500/20 animate-pulse' : 'text-zinc-600 dark:text-zinc-300'}`}
         >
           <Scissors className="h-3.5 w-3.5" />
         </button>
@@ -1826,14 +1826,14 @@ You can host this website on free offline static hosting platforms such as:
           <button
             title="Quick Table"
             onClick={() => setShowTablePicker(!showTablePicker)}
-            className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-650"
+            className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600"
           >
             <Table className="h-3.5 w-3.5" />
           </button>
           {showTablePicker && (
             <div className="absolute z-50 mt-1 p-2 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-xl select-none w-44 font-sans text-xs">
               <div className="font-bold text-zinc-400 mb-1.5">Insert Grid Table</div>
-              <div className="grid grid-cols-5 gap-1 border border-zinc-205 dark:border-zinc-850 p-1 rounded">
+              <div className="grid grid-cols-5 gap-1 border border-zinc-200 dark:border-zinc-800 p-1 rounded">
                 {Array.from({ length: 5 }, (_, rIdx) => {
                   const r = rIdx + 1
                   return Array.from({ length: 5 }, (_, cIdx) => {
@@ -1843,7 +1843,7 @@ You can host this website on free offline static hosting platforms such as:
                         key={`${r}-${c}`}
                         title={`${r}x${c}`}
                         onClick={() => insertTable(r, c)}
-                        className="w-5 h-5 border border-zinc-200 dark:border-zinc-850 hover:bg-blue-100 dark:hover:bg-blue-900 cursor-pointer transition rounded-sm"
+                        className="w-5 h-5 border border-zinc-200 dark:border-zinc-800 hover:bg-blue-100 dark:hover:bg-blue-900 cursor-pointer transition rounded-sm"
                       />
                     )
                   })
@@ -1866,7 +1866,7 @@ You can host this website on free offline static hosting platforms such as:
               setShowAlignMenu(false)
               setShowSpacingMenu(false)
             }}
-            className={`p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-650 ${
+            className={`p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600 ${
               layoutMode === "web" ? "text-cyan-500 bg-cyan-500/5 border border-cyan-500/20" : ""
             }`}
           >
@@ -2031,10 +2031,10 @@ You can host this website on free offline static hosting platforms such as:
                 {/* Spelling popup */}
                 {spellPopover.visible && (
                   <div 
-                    className="absolute z-50 bg-white dark:bg-zinc-955 border border-zinc-200 dark:border-zinc-850 p-2.5 rounded-lg shadow-xl w-44 font-sans text-xs flex flex-col gap-1.5 text-zinc-850 dark:text-zinc-200 select-none animate-in fade-in zoom-in-95 duration-100"
+                    className="absolute z-50 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 p-2.5 rounded-lg shadow-xl w-44 font-sans text-xs flex flex-col gap-1.5 text-zinc-800 dark:text-zinc-200 select-none animate-in fade-in zoom-in-95 duration-100"
                     style={{ left: `${spellPopover.x}px`, top: `${spellPopover.y}px`, transform: 'translateX(-50%)' }}
                   >
-                    <div className="text-[10px] text-zinc-450 font-bold uppercase tracking-wider">Suggested Spelling:</div>
+                    <div className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Suggested Spelling:</div>
                     <div className="flex flex-col gap-1">
                       {spellPopover.suggestions.map((s, idx) => (
                         <button
@@ -2046,10 +2046,10 @@ You can host this website on free offline static hosting platforms such as:
                         </button>
                       ))}
                     </div>
-                    <div className="h-px bg-zinc-150 dark:bg-zinc-800 my-0.5" />
+                    <div className="h-px bg-zinc-100 dark:bg-zinc-800 my-0.5" />
                     <div className="flex gap-2 justify-between">
-                      <button onClick={ignoreSpellCheck} className="text-zinc-455 hover:text-zinc-700 dark:hover:text-zinc-300 font-bold text-[10px]">Ignore</button>
-                      <button onClick={ignoreSpellCheck} className="text-zinc-455 hover:text-zinc-700 font-bold text-[10px]">Add to Dict</button>
+                      <button onClick={ignoreSpellCheck} className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 font-bold text-[10px]">Ignore</button>
+                      <button onClick={ignoreSpellCheck} className="text-zinc-400 hover:text-zinc-700 font-bold text-[10px]">Add to Dict</button>
                     </div>
                   </div>
                 )}
@@ -2107,7 +2107,7 @@ You can host this website on free offline static hosting platforms such as:
                 className={`p-3 rounded-xl border transition-all text-xs ${
                   activeCommentId === c.id 
                     ? 'border-blue-500 bg-blue-50/20 dark:bg-blue-950/10' 
-                    : 'border-zinc-150 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-zinc-50/30 dark:bg-zinc-900/20'
+                    : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-zinc-50/30 dark:bg-zinc-900/20'
                 }`}
                 onClick={() => setActiveCommentId(c.id)}
               >
@@ -2116,7 +2116,7 @@ You can host this website on free offline static hosting platforms such as:
                   <span>{c.createdAt}</span>
                 </div>
                 
-                <div className="text-zinc-450 italic border-l-2 border-zinc-300 dark:border-zinc-700 pl-2 py-0.5 my-1.5 text-[10px] truncate">
+                <div className="text-zinc-400 italic border-l-2 border-zinc-300 dark:border-zinc-700 pl-2 py-0.5 my-1.5 text-[10px] truncate">
                   &quot;{c.highlightedText}&quot;
                 </div>
 
@@ -2130,8 +2130,8 @@ You can host this website on free offline static hosting platforms such as:
                       rows={2}
                     />
                     <div className="flex gap-1.5 justify-end">
-                      <button onClick={() => cancelCommentDraft(c.id)} className="px-2.5 py-1 text-[10px] font-bold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 text-zinc-550 rounded transition">Cancel</button>
-                      <button onClick={() => saveCommentDraft(c.id)} className="px-2.5 py-1 text-[10px] font-bold bg-blue-600 text-white rounded hover:bg-blue-750 transition">Comment</button>
+                      <button onClick={() => cancelCommentDraft(c.id)} className="px-2.5 py-1 text-[10px] font-bold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 text-zinc-500 rounded transition">Cancel</button>
+                      <button onClick={() => saveCommentDraft(c.id)} className="px-2.5 py-1 text-[10px] font-bold bg-blue-600 text-white rounded hover:bg-blue-700 transition">Comment</button>
                     </div>
                   </div>
                 ) : (
@@ -2141,24 +2141,24 @@ You can host this website on free offline static hosting platforms such as:
                     {/* Replies */}
                     {c.replies?.map(r => (
                       <div key={r.id} className="pl-3 border-l border-zinc-200 dark:border-zinc-800 py-1 space-y-0.5 text-[11px]">
-                        <div className="flex justify-between font-bold text-[9px] text-zinc-450">
+                        <div className="flex justify-between font-bold text-[9px] text-zinc-400">
                           <span>{r.author}</span>
                           <span>{r.createdAt}</span>
                         </div>
-                        <p className="text-zinc-600 dark:text-zinc-450">{r.text}</p>
+                        <p className="text-zinc-600 dark:text-zinc-400">{r.text}</p>
                       </div>
                     ))}
 
                     {/* Reply Input */}
                     {activeCommentId === c.id && (
-                      <div className="space-y-1.5 pt-1.5 border-t border-zinc-150 dark:border-zinc-850 mt-2">
+                      <div className="space-y-1.5 pt-1.5 border-t border-zinc-200 dark:border-zinc-800 mt-2">
                         <input
                           type="text"
                           placeholder="Reply..."
                           value={replyDraftText}
                           onChange={(e) => setReplyDraftText(e.target.value)}
                           onKeyDown={(e) => { if (e.key === "Enter") addReply(c.id) }}
-                          className="w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-zinc-250 rounded text-[11px] focus:ring-1 focus:ring-blue-500 outline-none"
+                          className="w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-zinc-200 rounded text-[11px] focus:ring-1 focus:ring-blue-500 outline-none"
                         />
                         <div className="flex gap-1.5 justify-end">
                           <button onClick={() => resolveComment(c.id)} className="text-[10px] text-red-500 font-bold hover:underline flex-1 text-left py-0.5">Resolve</button>
@@ -2172,7 +2172,7 @@ You can host this website on free offline static hosting platforms such as:
             ))}
 
             {comments.length === 0 && (
-              <div className="text-[10px] text-zinc-650 italic text-center py-6">No active comments. Highlight text and click &apos;Add comment&apos;.</div>
+              <div className="text-[10px] text-zinc-600 italic text-center py-6">No active comments. Highlight text and click &apos;Add comment&apos;.</div>
             )}
           </div>
         </aside>
@@ -2191,10 +2191,10 @@ You can host this website on free offline static hosting platforms such as:
       {/* SHARE MODAL */}
       {modalOpen.share && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in duration-200 select-none">
-          <div className="w-[450px] border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-955 text-zinc-800 dark:text-zinc-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-            <div className="px-5 py-4 border-b border-zinc-150 dark:border-zinc-850 flex justify-between items-center">
+          <div className="w-[450px] border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="px-5 py-4 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
               <span className="text-sm font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Share with collaborators</span>
-              <button onClick={() => setModalOpen(prev => ({ ...prev, share: false }))} className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-850 text-zinc-450"><X className="h-4 w-4" /></button>
+              <button onClick={() => setModalOpen(prev => ({ ...prev, share: false }))} className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400"><X className="h-4 w-4" /></button>
             </div>
             <div className="p-6 space-y-4 text-xs">
               <div className="space-y-1.5">
@@ -2204,7 +2204,7 @@ You can host this website on free offline static hosting platforms such as:
                   value={shareConfig.emails}
                   onChange={(e) => setShareConfig(prev => ({ ...prev, emails: e.target.value }))}
                   placeholder="e.g. teammate@gauss.local, editor@gauss.local"
-                  className="w-full p-2.5 border border-zinc-250 rounded-xl bg-zinc-50 dark:bg-zinc-900 focus:ring-1 focus:ring-blue-500 outline-none text-zinc-700 dark:text-zinc-300"
+                  className="w-full p-2.5 border border-zinc-200 rounded-xl bg-zinc-50 dark:bg-zinc-900 focus:ring-1 focus:ring-blue-500 outline-none text-zinc-700 dark:text-zinc-300"
                 />
               </div>
               <div className="space-y-1.5">
@@ -2212,7 +2212,7 @@ You can host this website on free offline static hosting platforms such as:
                 <select
                   value={shareConfig.permission}
                   onChange={(e) => setShareConfig(prev => ({ ...prev, permission: e.target.value }))}
-                  className="w-full p-2.5 border border-zinc-250 rounded-xl bg-zinc-50 dark:bg-zinc-900 focus:ring-1 focus:ring-blue-500 outline-none text-zinc-700 dark:text-zinc-300"
+                  className="w-full p-2.5 border border-zinc-200 rounded-xl bg-zinc-50 dark:bg-zinc-900 focus:ring-1 focus:ring-blue-500 outline-none text-zinc-700 dark:text-zinc-300"
                 >
                   <option value="Viewer">Viewer (Read Only)</option>
                   <option value="Commenter">Commenter (Add remarks)</option>
@@ -2226,12 +2226,12 @@ You can host this website on free offline static hosting platforms such as:
             <div className="px-5 py-3.5 bg-zinc-50 dark:bg-zinc-900 flex justify-between">
               <button 
                 onClick={() => { navigator.clipboard.writeText(window.location.href); alert("Local share link copied!") }}
-                className="px-3.5 py-2 border border-zinc-200 dark:border-zinc-850 hover:border-zinc-400 rounded-xl text-xs font-bold text-zinc-550 transition"
+                className="px-3.5 py-2 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 rounded-xl text-xs font-bold text-zinc-500 transition"
               >
                 Copy Link
               </button>
               <div className="flex gap-2">
-                <button onClick={() => setModalOpen(prev => ({ ...prev, share: false }))} className="px-4 py-2 border border-zinc-200 dark:border-zinc-850 rounded-xl text-xs font-bold text-zinc-455 hover:bg-zinc-100 transition">Cancel</button>
+                <button onClick={() => setModalOpen(prev => ({ ...prev, share: false }))} className="px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-400 hover:bg-zinc-100 transition">Cancel</button>
                 <button 
                   onClick={() => { setModalOpen(prev => ({ ...prev, share: false })); alert("Collaborator invited successfully!") }}
                   className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition"
@@ -2247,10 +2247,10 @@ You can host this website on free offline static hosting platforms such as:
       {/* PAGE SETUP MODAL */}
       {modalOpen.pageSetup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in duration-200 select-none">
-          <div className="w-[450px] border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-            <div className="px-5 py-4 border-b border-zinc-150 dark:border-zinc-850 flex justify-between items-center">
+          <div className="w-[450px] border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="px-5 py-4 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
               <span className="text-sm font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Page Setup</span>
-              <button onClick={() => setModalOpen(prev => ({ ...prev, pageSetup: false }))} className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-850 text-zinc-450"><X className="h-4 w-4" /></button>
+              <button onClick={() => setModalOpen(prev => ({ ...prev, pageSetup: false }))} className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400"><X className="h-4 w-4" /></button>
             </div>
             <div className="p-6 space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-4">
@@ -2259,13 +2259,13 @@ You can host this website on free offline static hosting platforms such as:
                   <div className="flex gap-2 mt-1">
                     <button
                       onClick={() => setOrientation("Portrait")}
-                      className={`flex-1 py-1.5 rounded-lg border text-center font-bold ${orientation === 'Portrait' ? 'border-blue-500 bg-blue-50/20 text-blue-600' : 'border-zinc-200 dark:border-zinc-850 hover:bg-zinc-50'}`}
+                      className={`flex-1 py-1.5 rounded-lg border text-center font-bold ${orientation === 'Portrait' ? 'border-blue-500 bg-blue-50/20 text-blue-600' : 'border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50'}`}
                     >
                       Portrait
                     </button>
                     <button
                       onClick={() => setOrientation("Landscape")}
-                      className={`flex-1 py-1.5 rounded-lg border text-center font-bold ${orientation === 'Landscape' ? 'border-blue-500 bg-blue-50/20 text-blue-600' : 'border-zinc-200 dark:border-zinc-850 hover:bg-zinc-50'}`}
+                      className={`flex-1 py-1.5 rounded-lg border text-center font-bold ${orientation === 'Landscape' ? 'border-blue-500 bg-blue-50/20 text-blue-600' : 'border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50'}`}
                     >
                       Landscape
                     </button>
@@ -2276,7 +2276,7 @@ You can host this website on free offline static hosting platforms such as:
                   <select
                     value={pageSize}
                     onChange={(e) => setPageSize(e.target.value as "A4" | "Letter" | "Legal")}
-                    className="w-full mt-1 p-2 border border-zinc-250 rounded-lg bg-zinc-50 dark:bg-zinc-900 outline-none text-zinc-700 dark:text-zinc-300"
+                    className="w-full mt-1 p-2 border border-zinc-200 rounded-lg bg-zinc-50 dark:bg-zinc-900 outline-none text-zinc-700 dark:text-zinc-300"
                   >
                     <option value="A4">A4 (8.3&quot; x 11.7&quot;)</option>
                     <option value="Letter">Letter (8.5&quot; x 11&quot;)</option>
@@ -2297,7 +2297,7 @@ You can host this website on free offline static hosting platforms such as:
                     <button
                       key={mPreset.id}
                       onClick={() => setMargins(mPreset.id)}
-                      className={`flex-1 py-1.5 rounded-lg border text-center font-bold ${margins === mPreset.id ? 'border-blue-500 bg-blue-50/20 text-blue-600' : 'border-zinc-200 dark:border-zinc-850 hover:bg-zinc-50'}`}
+                      className={`flex-1 py-1.5 rounded-lg border text-center font-bold ${margins === mPreset.id ? 'border-blue-500 bg-blue-50/20 text-blue-600' : 'border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50'}`}
                     >
                       {mPreset.label}
                     </button>
@@ -2313,7 +2313,7 @@ You can host this website on free offline static hosting platforms such as:
                     type="color"
                     value={pageColor}
                     onChange={(e) => setPageColor(e.target.value)}
-                    className="h-8 w-8 rounded cursor-pointer border border-zinc-250 p-0"
+                    className="h-8 w-8 rounded cursor-pointer border border-zinc-200 p-0"
                   />
                   <div className="flex gap-1.5">
                     {["#ffffff", "#fefefc", "#fcfbf7", "#f5f6f8", "#ecfdf5", "#eff6ff"].map(c => (
@@ -2329,7 +2329,7 @@ You can host this website on free offline static hosting platforms such as:
               </div>
             </div>
             <div className="px-5 py-3.5 bg-zinc-50 dark:bg-zinc-900 flex justify-end gap-2">
-              <button onClick={() => setModalOpen(prev => ({ ...prev, pageSetup: false }))} className="px-4 py-2 border border-zinc-200 dark:border-zinc-850 rounded-xl text-xs font-bold text-zinc-455 hover:bg-zinc-100 transition">Cancel</button>
+              <button onClick={() => setModalOpen(prev => ({ ...prev, pageSetup: false }))} className="px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-400 hover:bg-zinc-100 transition">Cancel</button>
               <button onClick={() => setModalOpen(prev => ({ ...prev, pageSetup: false }))} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition">Apply</button>
             </div>
           </div>
@@ -2339,21 +2339,21 @@ You can host this website on free offline static hosting platforms such as:
       {/* WORD COUNT MODAL */}
       {modalOpen.wordCount && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in duration-200 select-none">
-          <div className="w-[380px] border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-955 text-zinc-800 dark:text-zinc-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-            <div className="px-5 py-4 border-b border-zinc-150 dark:border-zinc-850 flex justify-between items-center">
+          <div className="w-[380px] border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="px-5 py-4 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
               <span className="text-sm font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Word Count</span>
-              <button onClick={() => setModalOpen(prev => ({ ...prev, wordCount: false }))} className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-850 text-zinc-450"><X className="h-4 w-4" /></button>
+              <button onClick={() => setModalOpen(prev => ({ ...prev, wordCount: false }))} className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400"><X className="h-4 w-4" /></button>
             </div>
             <div className="p-6 space-y-3.5 text-xs">
-              <div className="flex justify-between border-b border-zinc-150 dark:border-zinc-850 pb-2">
+              <div className="flex justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
                 <span className="text-zinc-500">Pages:</span>
                 <span className="font-bold">{passedPageCount}</span>
               </div>
-              <div className="flex justify-between border-b border-zinc-150 dark:border-zinc-850 pb-2">
+              <div className="flex justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
                 <span className="text-zinc-500">Words:</span>
                 <span className="font-bold">{wordCount}</span>
               </div>
-              <div className="flex justify-between border-b border-zinc-150 dark:border-zinc-850 pb-2">
+              <div className="flex justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
                 <span className="text-zinc-500">Characters (with spaces):</span>
                 <span className="font-bold">{(wordCount * 5.6) | 0}</span>
               </div>
@@ -2362,14 +2362,14 @@ You can host this website on free offline static hosting platforms such as:
                 <span className="font-bold">{Math.max(1, Math.ceil(wordCount / 45))}</span>
               </div>
               
-              <label className="flex items-center gap-2 mt-4 pt-2 border-t border-zinc-200 dark:border-zinc-850 cursor-pointer">
+              <label className="flex items-center gap-2 mt-4 pt-2 border-t border-zinc-200 dark:border-zinc-800 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={showWordCountFloat}
                   onChange={(e) => setShowWordCountFloat(e.target.checked)}
-                  className="rounded text-blue-650 focus:ring-blue-500 outline-none"
+                  className="rounded text-blue-600 focus:ring-blue-500 outline-none"
                 />
-                <span className="text-zinc-650 dark:text-zinc-400 font-medium">Show word count while typing</span>
+                <span className="text-zinc-600 dark:text-zinc-400 font-medium">Show word count while typing</span>
               </label>
             </div>
             <div className="px-5 py-3.5 bg-zinc-50 dark:bg-zinc-900 flex justify-end">
@@ -2381,10 +2381,10 @@ You can host this website on free offline static hosting platforms such as:
 
       {/* FIND & REPLACE MODAL */}
       {modalOpen.findReplace && (
-        <div className="fixed top-28 right-16 z-50 p-4 border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 shadow-2xl rounded-2xl w-80 font-sans text-xs flex flex-col gap-3 animate-in fade-in slide-in-from-top-4 duration-150">
-          <div className="flex justify-between items-center font-bold text-zinc-500 border-b border-zinc-150 dark:border-zinc-850 pb-1.5">
+        <div className="fixed top-28 right-16 z-50 p-4 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 shadow-2xl rounded-2xl w-80 font-sans text-xs flex flex-col gap-3 animate-in fade-in slide-in-from-top-4 duration-150">
+          <div className="flex justify-between items-center font-bold text-zinc-500 border-b border-zinc-200 dark:border-zinc-800 pb-1.5">
             <span className="text-blue-600 dark:text-blue-400 uppercase tracking-widest text-[10px]">Find and Replace</span>
-            <button onClick={() => setModalOpen(prev => ({ ...prev, findReplace: false }))} className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-850 text-zinc-400 hover:text-zinc-600"><X className="h-3.5 w-3.5" /></button>
+            <button onClick={() => setModalOpen(prev => ({ ...prev, findReplace: false }))} className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-600"><X className="h-3.5 w-3.5" /></button>
           </div>
           <div className="space-y-2">
             <div className="flex flex-col gap-1">
@@ -2394,7 +2394,7 @@ You can host this website on free offline static hosting platforms such as:
                 placeholder="Find..."
                 value={findText}
                 onChange={(e) => setFindText(e.target.value)}
-                className="p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 rounded-lg outline-none w-full text-zinc-700 dark:text-zinc-300"
+                className="p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 rounded-lg outline-none w-full text-zinc-700 dark:text-zinc-300"
               />
             </div>
             <div className="flex flex-col gap-1">
@@ -2404,7 +2404,7 @@ You can host this website on free offline static hosting platforms such as:
                 placeholder="Replace with..."
                 value={replaceText}
                 onChange={(e) => setReplaceText(e.target.value)}
-                className="p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-250 rounded-lg outline-none w-full text-zinc-700 dark:text-zinc-300"
+                className="p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 rounded-lg outline-none w-full text-zinc-700 dark:text-zinc-300"
               />
             </div>
             
@@ -2433,9 +2433,9 @@ You can host this website on free offline static hosting platforms such as:
               <span className="text-[10px] text-blue-500 dark:text-blue-400 font-mono italic">{findReplaceMsg}</span>
             )}
           </div>
-          <div className="flex gap-1.5 justify-end mt-2 pt-2 border-t border-zinc-150 dark:border-zinc-850">
-            <button onClick={handleFind} className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-850 rounded hover:bg-zinc-55 dark:hover:bg-zinc-800 transition">Find</button>
-            <button onClick={handleReplace} className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-850 rounded hover:bg-zinc-55 dark:hover:bg-zinc-800 transition">Replace</button>
+          <div className="flex gap-1.5 justify-end mt-2 pt-2 border-t border-zinc-200 dark:border-zinc-800">
+            <button onClick={handleFind} className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded hover:bg-zinc-50 dark:hover:bg-zinc-800 transition">Find</button>
+            <button onClick={handleReplace} className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded hover:bg-zinc-50 dark:hover:bg-zinc-800 transition">Replace</button>
             <button onClick={handleReplaceAll} className="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition font-bold">All</button>
           </div>
         </div>
@@ -2444,17 +2444,17 @@ You can host this website on free offline static hosting platforms such as:
       {/* SPELLING MODAL */}
       {modalOpen.spellcheck && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in duration-200 select-none">
-          <div className="w-[420px] border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-            <div className="px-5 py-4 border-b border-zinc-150 dark:border-zinc-850 flex justify-between items-center">
+          <div className="w-[420px] border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="px-5 py-4 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
               <span className="text-sm font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Spelling & Grammar Review</span>
-              <button onClick={() => setModalOpen(prev => ({ ...prev, spellcheck: false }))} className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-850 text-zinc-450"><X className="h-4 w-4" /></button>
+              <button onClick={() => setModalOpen(prev => ({ ...prev, spellcheck: false }))} className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400"><X className="h-4 w-4" /></button>
             </div>
             <div className="p-6 space-y-4 text-xs">
               <div className="text-[10px] text-zinc-400 uppercase tracking-wider">Document check list:</div>
               {getMisspelledWords().length > 0 ? (
                 <div className="space-y-3.5 max-h-[220px] overflow-y-auto pr-1">
                   {getMisspelledWords().map((word, idx) => (
-                    <div key={idx} className="p-3 border border-zinc-150 dark:border-zinc-800 rounded-xl bg-zinc-55/50 dark:bg-zinc-900/10 flex justify-between items-center">
+                    <div key={idx} className="p-3 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/10 flex justify-between items-center">
                       <div className="space-y-1">
                         <div className="text-zinc-500 font-bold">Unrecognized Word:</div>
                         <div className="font-mono text-red-500 text-sm line-through">{word}</div>
@@ -2507,7 +2507,7 @@ You can host this website on free offline static hosting platforms such as:
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-6 text-zinc-450 italic">
+                <div className="text-center py-6 text-zinc-400 italic">
                   ✓ Document review complete! No unrecognized words or typos found.
                 </div>
               )}
@@ -2522,29 +2522,29 @@ You can host this website on free offline static hosting platforms such as:
       {/* KEYBOARD SHORTCUTS */}
       {modalOpen.shortcuts && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in duration-200 select-none">
-          <div className="w-[380px] border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-955 text-zinc-800 dark:text-zinc-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-            <div className="px-5 py-4 border-b border-zinc-150 dark:border-zinc-850 flex justify-between items-center">
+          <div className="w-[380px] border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="px-5 py-4 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
               <span className="text-sm font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Keyboard Shortcuts</span>
-              <button onClick={() => setModalOpen(prev => ({ ...prev, shortcuts: false }))} className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-850 text-zinc-455"><X className="h-4 w-4" /></button>
+              <button onClick={() => setModalOpen(prev => ({ ...prev, shortcuts: false }))} className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400"><X className="h-4 w-4" /></button>
             </div>
-            <div className="p-6 space-y-3 text-xs font-mono text-zinc-655 dark:text-zinc-400">
-              <div className="flex justify-between border-b border-zinc-150 dark:border-zinc-850 pb-1.5">
+            <div className="p-6 space-y-3 text-xs font-mono text-zinc-600 dark:text-zinc-400">
+              <div className="flex justify-between border-b border-zinc-200 dark:border-zinc-800 pb-1.5">
                 <span>Bold</span>
                 <span className="font-bold bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">Ctrl + B</span>
               </div>
-              <div className="flex justify-between border-b border-zinc-150 dark:border-zinc-850 pb-1.5">
+              <div className="flex justify-between border-b border-zinc-200 dark:border-zinc-800 pb-1.5">
                 <span>Italic</span>
                 <span className="font-bold bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">Ctrl + I</span>
               </div>
-              <div className="flex justify-between border-b border-zinc-150 dark:border-zinc-850 pb-1.5">
+              <div className="flex justify-between border-b border-zinc-200 dark:border-zinc-800 pb-1.5">
                 <span>Underline</span>
                 <span className="font-bold bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">Ctrl + U</span>
               </div>
-              <div className="flex justify-between border-b border-zinc-150 dark:border-zinc-850 pb-1.5">
+              <div className="flex justify-between border-b border-zinc-200 dark:border-zinc-800 pb-1.5">
                 <span>Undo</span>
                 <span className="font-bold bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">Ctrl + Z</span>
               </div>
-              <div className="flex justify-between border-b border-zinc-150 dark:border-zinc-850 pb-1.5">
+              <div className="flex justify-between border-b border-zinc-200 dark:border-zinc-800 pb-1.5">
                 <span>Redo</span>
                 <span className="font-bold bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">Ctrl + Y</span>
               </div>
@@ -2562,18 +2562,18 @@ You can host this website on free offline static hosting platforms such as:
 
       {/* WEB PAGE SETTINGS (SEO & BACKGROUND) MODAL */}
       {modalOpen.seoSettings && (
-        <div className="fixed inset-0 z-55 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200 select-none">
-          <div className="w-[480px] border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-            <div className="px-5 py-4 border-b border-zinc-150 dark:border-zinc-850 flex justify-between items-center bg-zinc-50 dark:bg-zinc-900/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200 select-none">
+          <div className="w-[480px] border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="px-5 py-4 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-zinc-50 dark:bg-zinc-900/50">
               <span className="text-sm font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Web Page Settings (SEO & Styling)</span>
-              <button onClick={() => setModalOpen(prev => ({ ...prev, seoSettings: false }))} className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-850 text-zinc-450"><X className="h-4 w-4" /></button>
+              <button onClick={() => setModalOpen(prev => ({ ...prev, seoSettings: false }))} className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400"><X className="h-4 w-4" /></button>
             </div>
             
             <div className="p-6 space-y-4 text-xs overflow-y-auto max-h-[450px]">
               
               {/* Section 1: SEO */}
               <div className="space-y-3">
-                <h4 className="font-bold text-[10px] text-zinc-400 uppercase tracking-wider border-b border-zinc-150 dark:border-zinc-850 pb-1">SEO Headers</h4>
+                <h4 className="font-bold text-[10px] text-zinc-400 uppercase tracking-wider border-b border-zinc-200 dark:border-zinc-800 pb-1">SEO Headers</h4>
                 
                 <div className="space-y-1.5">
                   <label className="text-zinc-500 font-bold block">Page Title (&lt;title&gt;):</label>
@@ -2581,7 +2581,7 @@ You can host this website on free offline static hosting platforms such as:
                     type="text"
                     value={seoMetadata.title}
                     onChange={(e) => setSeoMetadata(prev => ({ ...prev, title: e.target.value }))}
-                    className="w-full p-2 border border-zinc-250 rounded-lg bg-zinc-55 dark:bg-zinc-900 focus:ring-1 focus:ring-blue-500 outline-none text-zinc-750 dark:text-zinc-300"
+                    className="w-full p-2 border border-zinc-200 rounded-lg bg-zinc-50 dark:bg-zinc-900 focus:ring-1 focus:ring-blue-500 outline-none text-zinc-700 dark:text-zinc-300"
                     placeholder="e.g. My Portfolio Website"
                   />
                 </div>
@@ -2591,7 +2591,7 @@ You can host this website on free offline static hosting platforms such as:
                   <textarea
                     value={seoMetadata.description}
                     onChange={(e) => setSeoMetadata(prev => ({ ...prev, description: e.target.value }))}
-                    className="w-full p-2 border border-zinc-250 rounded-lg bg-zinc-55 dark:bg-zinc-900 focus:ring-1 focus:ring-blue-500 outline-none text-zinc-750 dark:text-zinc-300"
+                    className="w-full p-2 border border-zinc-200 rounded-lg bg-zinc-50 dark:bg-zinc-900 focus:ring-1 focus:ring-blue-500 outline-none text-zinc-700 dark:text-zinc-300"
                     rows={2}
                     placeholder="Brief description of the webpage for search engines..."
                   />
@@ -2604,7 +2604,7 @@ You can host this website on free offline static hosting platforms such as:
                       type="text"
                       value={seoMetadata.keywords}
                       onChange={(e) => setSeoMetadata(prev => ({ ...prev, keywords: e.target.value }))}
-                      className="w-full p-2 border border-zinc-250 rounded-lg bg-zinc-55 dark:bg-zinc-900 focus:ring-1 focus:ring-blue-500 outline-none text-zinc-750 dark:text-zinc-300"
+                      className="w-full p-2 border border-zinc-200 rounded-lg bg-zinc-50 dark:bg-zinc-900 focus:ring-1 focus:ring-blue-500 outline-none text-zinc-700 dark:text-zinc-300"
                       placeholder="comma-separated words"
                     />
                   </div>
@@ -2614,7 +2614,7 @@ You can host this website on free offline static hosting platforms such as:
                       type="text"
                       value={seoMetadata.author}
                       onChange={(e) => setSeoMetadata(prev => ({ ...prev, author: e.target.value }))}
-                      className="w-full p-2 border border-zinc-250 rounded-lg bg-zinc-55 dark:bg-zinc-900 focus:ring-1 focus:ring-blue-500 outline-none text-zinc-750 dark:text-zinc-300"
+                      className="w-full p-2 border border-zinc-200 rounded-lg bg-zinc-50 dark:bg-zinc-900 focus:ring-1 focus:ring-blue-500 outline-none text-zinc-700 dark:text-zinc-300"
                     />
                   </div>
                 </div>
@@ -2622,7 +2622,7 @@ You can host this website on free offline static hosting platforms such as:
 
               {/* Section 2: Web Background Style */}
               <div className="space-y-3 pt-2">
-                <h4 className="font-bold text-[10px] text-zinc-400 uppercase tracking-wider border-b border-zinc-150 dark:border-zinc-850 pb-1">Webpage Background Styling</h4>
+                <h4 className="font-bold text-[10px] text-zinc-400 uppercase tracking-wider border-b border-zinc-200 dark:border-zinc-800 pb-1">Webpage Background Styling</h4>
                 
                 <div className="space-y-2">
                   <label className="text-zinc-500 font-bold block">Preset Colors:</label>
@@ -2663,10 +2663,10 @@ You can host this website on free offline static hosting platforms such as:
                         type="button"
                         onClick={() => { setWebBgGradient(preset.grad) }}
                         className={`p-2 rounded-xl border text-[10px] font-bold text-left transition flex flex-col gap-1 ${
-                          webBgGradient === preset.grad ? "border-blue-500 bg-blue-50/20 text-blue-600" : "border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 text-zinc-650 dark:text-zinc-400"
+                          webBgGradient === preset.grad ? "border-blue-500 bg-blue-50/20 text-blue-600" : "border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 text-zinc-600 dark:text-zinc-400"
                         }`}
                       >
-                        <span className="h-6 w-full rounded border border-zinc-250 block" style={{ background: preset.grad }} />
+                        <span className="h-6 w-full rounded border border-zinc-200 block" style={{ background: preset.grad }} />
                         <span className="truncate">{preset.label}</span>
                       </button>
                     ))}
@@ -2681,7 +2681,7 @@ You can host this website on free offline static hosting platforms such as:
                         type="color"
                         value={webBgColor}
                         onChange={(e) => { setWebBgColor(e.target.value); setWebBgGradient("") }}
-                        className="h-8 w-8 rounded cursor-pointer border border-zinc-250 p-0"
+                        className="h-8 w-8 rounded cursor-pointer border border-zinc-200 p-0"
                       />
                       <span className="font-mono font-bold text-zinc-500">{webBgColor.toUpperCase()}</span>
                     </div>
@@ -2702,8 +2702,8 @@ You can host this website on free offline static hosting platforms such as:
             </div>
 
             <div className="px-5 py-3.5 bg-zinc-50 dark:bg-zinc-900 flex justify-end gap-2">
-              <button onClick={() => setModalOpen(prev => ({ ...prev, seoSettings: false }))} className="px-4 py-2 border border-zinc-200 dark:border-zinc-850 rounded-xl text-xs font-bold text-zinc-455 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition">Cancel</button>
-              <button onClick={() => setModalOpen(prev => ({ ...prev, seoSettings: false }))} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-750 transition animate-pulse">Apply Settings</button>
+              <button onClick={() => setModalOpen(prev => ({ ...prev, seoSettings: false }))} className="px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition">Cancel</button>
+              <button onClick={() => setModalOpen(prev => ({ ...prev, seoSettings: false }))} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition">Apply Settings</button>
             </div>
           </div>
         </div>

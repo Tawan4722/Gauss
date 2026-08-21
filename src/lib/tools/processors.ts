@@ -647,6 +647,58 @@ export const processTool = async (tool: Tool, files: File[], settings: ToolSetti
     return { summary: "Image format converter finalized.", outputs };
   }
 
+  if (tool.id === "bates-pdf") {
+    if (files.length === 0) throw new Error("Upload a PDF file to apply Bates numbering.");
+    const pdf = await PDFDocument.load(await files[0].arrayBuffer());
+    const pages = pdf.getPages();
+    const font = await pdf.embedFont(StandardFonts.Helvetica);
+    const prefix = getString(settings, "batesPrefix", "BATES-");
+    let batesCounter = getNumber(settings, "batesStart", 101);
+    const padding = getNumber(settings, "batesPadding", 6);
+    const position = getString(settings, "batesPosition", "Bottom Right");
+
+    for (const page of pages) {
+      const batesStr = `${prefix}${String(batesCounter).padStart(padding, "0")}`;
+      const { width, height } = page.getSize();
+      const fontSize = 10;
+      const textWidth = font.widthOfTextAtSize(batesStr, fontSize);
+      const margin = 36;
+      let bx = width - margin - textWidth;
+      let by = margin;
+
+      if (position === "Top Left") { bx = margin; by = height - margin; }
+      else if (position === "Top Center") { bx = (width - textWidth) / 2; by = height - margin; }
+      else if (position === "Top Right") { bx = width - margin - textWidth; by = height - margin; }
+      else if (position === "Bottom Left") { bx = margin; by = margin; }
+      else if (position === "Bottom Center") { bx = (width - textWidth) / 2; by = margin; }
+
+      page.drawRectangle({
+        x: bx - 4,
+        y: by - 2,
+        width: textWidth + 8,
+        height: fontSize + 4,
+        color: rgb(1, 1, 1),
+        opacity: 0.9,
+      });
+
+      page.drawText(batesStr, {
+        x: bx,
+        y: by,
+        size: fontSize,
+        font,
+        color: rgb(0.1, 0.1, 0.1),
+      });
+
+      batesCounter++;
+    }
+
+    const bytes = await pdf.save();
+    return {
+      summary: `Applied Bates numbering to ${pages.length} pages.`,
+      outputs: [await createOutput(`${baseNameOf(files[0].name)}-bates.pdf`, pdfBytesToBlob(bytes), "Bates stamping complete.")]
+    };
+  }
+
   if (tool.id === "watermark-pdf") {
     if (files.length === 0) throw new Error("Upload a PDF file to watermark.");
     const pdf = await PDFDocument.load(await files[0].arrayBuffer());
