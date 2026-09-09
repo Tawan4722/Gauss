@@ -54,24 +54,24 @@
   --font-thai-minimal: "Kanit", "Leelawadee UI", "Tahoma", sans-serif;
   --font-ui-sans: var(--font-geist-sans);
 
-  /* Light Theme (Clean Milk Slate - Default) */
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --popover: #ffffff;
-  --popover-foreground: #0f172a;
+  /* Light Theme (Warm Paper Yellow / Parchment Cream - Default) */
+  --background: #fbf7ee;
+  --foreground: #2a241e;
+  --card: #fffdfa;
+  --card-foreground: #2a241e;
+  --popover: #fffdfa;
+  --popover-foreground: #2a241e;
   --primary: #0284c7;
   --primary-foreground: #ffffff;
   --secondary: #d97706;
   --secondary-foreground: #ffffff;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #f1f5f9;
+  --muted: #f3ebd9;
+  --muted-foreground: #6c6052;
+  --accent: #f3ebd9;
   --accent-foreground: #0284c7;
   --destructive: #ef4444;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
+  --border: #c8bcab;
+  --input: #c8bcab;
   --ring: #0284c7;
   --radius: 0.625rem;
 }
@@ -81,7 +81,7 @@ html[lang="th"] {
 }
 
 .dark {
-  /* Warm Charcoal Dark Theme */
+  /* Warm Charcoal Dark Theme (with Crisp High-Contrast Borders) */
   --background: #141416;
   --foreground: #e4e4e7;
   --card: #1f1f23;
@@ -97,8 +97,8 @@ html[lang="th"] {
   --accent: #28282d;
   --accent-foreground: #38bdf8;
   --destructive: #ef4444;
-  --border: #2e2e34;
-  --input: #2e2e34;
+  --border: #44444c;
+  --input: #44444c;
   --ring: #38bdf8;
 }
 

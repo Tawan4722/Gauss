@@ -70,7 +70,7 @@ export default function SettingsPanel() {
           {/* Appearance Theme Selector */}
           <div className="border-b border-border pb-4">
             <span className="block text-xs font-semibold text-foreground">Appearance Theme (ธีมการแสดงผล)</span>
-            <span className="mt-0.5 block text-[10px] text-muted-foreground">เลือกโทนสีถนอมสายตาสำหรับใช้งาน (Clean Milk Slate Light เป็นค่าเริ่มต้น)</span>
+            <span className="mt-0.5 block text-[10px] text-muted-foreground">เลือกโทนสีถนอมสายตาสำหรับใช้งาน (Warm Paper Yellow เป็นค่าเริ่มต้น)</span>
             <div className="mt-3 grid grid-cols-2 gap-3">
               <button
                 type="button"
@@ -82,7 +82,7 @@ export default function SettingsPanel() {
                 }`}
               >
                 <Sun className="h-4 w-4 text-amber-500" />
-                <span>Clean Milk Slate (Light Default)</span>
+                <span>Warm Paper Yellow (Light Default)</span>
               </button>
               <button
                 type="button"
