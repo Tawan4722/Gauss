@@ -54,24 +54,25 @@
   --font-thai-minimal: "Kanit", "Leelawadee UI", "Tahoma", sans-serif;
   --font-ui-sans: var(--font-geist-sans);
 
-  --background: #050605;
-  --foreground: #f4f4f5;
-  --card: #0d0e0d;
-  --card-foreground: #f4f4f5;
-  --popover: #0d0e0d;
-  --popover-foreground: #f4f4f5;
-  --primary: #22d3ee;
-  --primary-foreground: #050605;
-  --secondary: #fbbf24;
-  --secondary-foreground: #050605;
-  --muted: #181918;
-  --muted-foreground: #a1a1aa;
-  --accent: #181918;
-  --accent-foreground: #22d3ee;
+  /* Light Theme (Clean Milk Slate - Default) */
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #0284c7;
+  --primary-foreground: #ffffff;
+  --secondary: #d97706;
+  --secondary-foreground: #ffffff;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #0284c7;
   --destructive: #ef4444;
-  --border: #202220;
-  --input: #202220;
-  --ring: #22d3ee;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #0284c7;
   --radius: 0.625rem;
 }
 
@@ -80,24 +81,25 @@ html[lang="th"] {
 }
 
 .dark {
-  --background: #050605;
-  --foreground: #f4f4f5;
-  --card: #0d0e0d;
-  --card-foreground: #f4f4f5;
-  --popover: #0d0e0d;
-  --popover-foreground: #f4f4f5;
-  --primary: #22d3ee;
-  --primary-foreground: #050605;
-  --secondary: #fbbf24;
-  --secondary-foreground: #050605;
-  --muted: #181918;
+  /* Warm Charcoal Dark Theme */
+  --background: #141416;
+  --foreground: #e4e4e7;
+  --card: #1f1f23;
+  --card-foreground: #e4e4e7;
+  --popover: #1f1f23;
+  --popover-foreground: #e4e4e7;
+  --primary: #38bdf8;
+  --primary-foreground: #141416;
+  --secondary: #f59e0b;
+  --secondary-foreground: #141416;
+  --muted: #28282d;
   --muted-foreground: #a1a1aa;
-  --accent: #181918;
-  --accent-foreground: #22d3ee;
+  --accent: #28282d;
+  --accent-foreground: #38bdf8;
   --destructive: #ef4444;
-  --border: #202220;
-  --input: #202220;
-  --ring: #22d3ee;
+  --border: #2e2e34;
+  --input: #2e2e34;
+  --ring: #38bdf8;
 }
 
 @layer base {

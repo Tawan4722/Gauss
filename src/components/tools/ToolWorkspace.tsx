@@ -287,25 +287,25 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
   }
 
   return (
-    <div className="min-h-screen bg-[#050605] text-zinc-100 flex flex-col pt-14 pb-12">
+    <div className="min-h-screen bg-background text-foreground flex flex-col pt-14 pb-12 transition-colors duration-200">
       
       {/* Tool Header Navigation Bar */}
-      <div className="border-b border-[#202220] bg-[#0d0e0d]/80 px-4 sm:px-8 py-3 backdrop-blur-md">
+      <div className="border-b border-border bg-card/80 px-4 sm:px-8 py-3 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
           
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="text-xs font-bold text-zinc-400 hover:text-cyan-400 transition"
+              className="text-xs font-bold text-muted-foreground hover:text-primary transition"
             >
               ← Back to All Tools
             </Link>
-            <span className="text-zinc-700">|</span>
+            <span className="opacity-30">•</span>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-black uppercase tracking-wider text-cyan-400">
+              <span className="text-xs font-black uppercase tracking-wider text-primary">
                 {activeTool.name}
               </span>
-              <span className="rounded-full bg-cyan-950/40 border border-cyan-500/30 px-2 py-0.5 text-[9px] font-bold text-cyan-300">
+              <span className="rounded-full bg-primary/10 border border-primary/30 px-2 py-0.5 text-[9px] font-bold text-primary">
                 {activeTool.category}
               </span>
             </div>
@@ -313,7 +313,7 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
 
           {/* Quick Select Tool Selector Dropdown */}
           <div className="flex items-center gap-2">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 hidden sm:inline">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground hidden sm:inline">
               Switch Tool:
             </label>
             <select
@@ -324,7 +324,7 @@ export default function ToolWorkspace({ toolId: initialToolId }: { toolId: strin
                 setOutputs([])
                 setSuccessState(false)
               }}
-              className="h-8 border border-[#202220] bg-[#050605] text-xs text-white rounded-lg px-3 outline-none focus:border-cyan-400 cursor-pointer"
+              className="h-8 border border-border bg-card text-xs text-foreground rounded-lg px-3 outline-none focus:border-primary cursor-pointer"
             >
               {toolRegistry.map(t => (
                 <option key={t.id} value={t.id}>{t.name}</option>
